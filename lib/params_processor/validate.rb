@@ -1,4 +1,5 @@
 require 'params_processor/validate/param_obj'
+require 'params_processor/doc_converter'
 
 module ParamsProcessor
   module Validate
@@ -29,13 +30,23 @@ module ParamsProcessor
         params[name] = param.dft if not_exist(input) && !param.dft.nil?
         params[name] =
             case type
-              when 'integer'
-                input.to_i
-              when 'boolean'
-                input.to_s.eql?('true') ? true : false
-              else; params[name]
+            when 'integer'
+              input.to_i
+            when 'boolean'
+              input.to_s.eql?('true') ? true : false
+            else; params[name]
             end if params[name].is_a? String
       end
+    end
+
+    # # HACK
+    # def body_settings
+    #   path_doc = current_path_doc(true) || current_path_doc
+    #   path_doc.dig request.method.downcase, :requestBody, :content, "multipart/form-data", :schema, :properties
+    # end
+
+    def permitted
+      params.permit(params_settings&.map { |setting| setting[:name] })
     end
 
     # -----------
@@ -53,39 +64,39 @@ module ParamsProcessor
       return true if !@_param.required? && not_exist(input)
 
       case current_case
-        when :exist
-          return !(setting.eql?(true) && not_exist(input))
+      when :exist
+        return !(setting.eql?(true) && not_exist(input))
 
-        when :type
-          case @_param.type
-            when 'integer'; input_s.match? /^[0-9]*$/
-            when 'boolean'; input_s.in? %w[true false]
-            else; true
-          end
+      when :type
+        case @_param.type
+          when 'integer' then input_s.match? /^[0-9]*$/
+          when 'boolean' then input_s.in? %w[true false]
+          else; true
+        end
 
-        when :size
-          if input.is_a? Array
-            input.count >= setting[0] && input.count <= setting[1]
-          else
-            input_s.length >= setting[0] && input_s.length <= setting[1]
-          end
-
-        when :is
-          # TODO
-          return input_s.match?(/@/)                  if setting.eql? 'email'
-
-        when :allowable_values
-          case @_param.type
-            when 'integer'; setting.include? input.to_i
-            when 'boolean'; setting.map(&:to_s).include? input_s
-            else; true
-          end
-
-        when :regexp
-          return input_s.match? Regexp.new setting
-
+      when :size
+        if input.is_a? Array
+          input.count >= setting[0] && input.count <= setting[1]
         else
-          true
+          input_s.length >= setting[0] && input_s.length <= setting[1]
+        end
+
+      when :is
+        # TODO
+        return input_s.match?(/\A[^@\s]+@[^@\s]+\z/)                  if setting.eql? 'email'
+
+      when :allowable_values
+        case @_param.type
+        when 'integer' then setting.include? input.to_i
+        when 'boolean' then setting.map(&:to_s).include? input_s
+        else; true
+        end
+
+      when :regexp
+        return input_s.match? Regexp.new setting
+
+      else
+        true
       end
     end
 
@@ -95,21 +106,37 @@ module ParamsProcessor
     alias_method :it_is_not_in,      :it_is_not
     alias_method :it_has_wrong,      :it_is_not
 
-    def current_api
+    def find_match?(str_array, src)
+      str_array.each { |str| return true if src.match? str.delete('Doc') }
+      false
+    end
+
+    def current_api(find_doc_other_place = false)
       OpenApi.apis.each do |api, settings|
-        return api if settings[:root_controller].descendants.include? self.class
+        is_descendant = settings[:root_controller].descendants.include? self.class
+        if find_doc_other_place
+          next if is_descendant
+          find_match? settings[:root_controller].descendants.map(&:to_s), self.class.name
+        else
+          is_descendant
+        end and return api
       end
     end
 
-    def current_path_doc
-      $open_apis.dig(current_api, :paths).each do |path, doc|
+    def open_apis
+      $_open_apis ||= DocConverter.new $open_apis
+    end
+
+    def current_path_doc(find_doc_other_place = false)
+      open_apis.dig(current_api(find_doc_other_place), :paths).each do |path, doc|
         # "/api/v1/nested/2/routes/1" will match "/api/v1/nested/.*/routes/.*"
         return doc if request.path.match? Regexp.new(path.gsub(/{[^\/]*}/, '.*'))
       end
     end
 
     def params_settings
-      current_path_doc[request.request_method.downcase][:parameters]
+      path_doc = current_path_doc(true) || current_path_doc
+      path_doc[request.method.downcase][:parameters]
     end
 
     def it what
