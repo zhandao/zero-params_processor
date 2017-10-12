@@ -1,55 +1,12 @@
 require 'params_processor/validate/param_obj'
 require 'params_processor/doc_converter'
+require 'params_processor/validate/api_doc_loader'
 
 module ParamsProcessor
   module Validate
+    include ApiDocLoader
 
     private
-
-    # TODO: type support: string integer boolean
-    def validate_params
-      params_settings.each do |param_setting|
-        @_param = ParamObj.new param_setting
-        @_input_under_check = params[@_param.name.to_sym]
-
-        it 'is required'                   if it_should_but_not :exist
-        it must_be "#{@_param.type}"               if it_is_not :type
-        it "has length must be(in) #{@_param.size.join('..')}" if it_has_wrong :size # TODO: [0,1)
-        it must_be "#{@_param.is}"            if it_is_unmatched
-        it "must match /#{@_param.pattern}/"           if it_is_unmatched :regexp
-        it must_in "#{@_param.enum}"             if it_is_not_in :allowable_values
-        # TODO: range
-      end
-    end
-
-    def convert_params_type
-      params_settings.each do |param_setting|
-        param = ParamObj.new param_setting
-        type, name = param.type, param.name.to_sym
-        input = params[name]
-        params[name] = param.dft if not_exist(input) && !param.dft.nil?
-        params[name] =
-            case type
-            when 'integer'
-              input.to_i
-            when 'boolean'
-              input.to_s.eql?('true') ? true : false
-            else; params[name]
-            end if params[name].is_a? String
-      end
-    end
-
-    # # HACK
-    # def body_settings
-    #   path_doc = current_path_doc(true) || current_path_doc
-    #   path_doc.dig request.method.downcase, :requestBody, :content, "multipart/form-data", :schema, :properties
-    # end
-
-    def permitted
-      params.permit(params_settings&.map { |setting| setting[:name] })
-    end
-
-    # -----------
 
     # 此处为验证逻辑
     def it_is(what = :is)
@@ -83,13 +40,13 @@ module ParamsProcessor
 
       when :is
         # TODO
-        return input_s.match?(/\A[^@\s]+@[^@\s]+\z/)                  if setting.eql? 'email'
+        return input_s.match?(/\A[^@\s]+@[^@\s]+\z/) if setting.eql? 'email'
 
       when :allowable_values
         case @_param.type
         when 'integer' then setting.include? input.to_i
         when 'boolean' then setting.map(&:to_s).include? input_s
-        else; true
+        else                setting.include? input_s
         end
 
       when :regexp
@@ -105,39 +62,6 @@ module ParamsProcessor
     alias_method :it_is_unmatched,   :it_is_not
     alias_method :it_is_not_in,      :it_is_not
     alias_method :it_has_wrong,      :it_is_not
-
-    def find_match?(str_array, src)
-      str_array.each { |str| return true if src.match? str.delete('Doc') }
-      false
-    end
-
-    def current_api(find_doc_other_place = false)
-      OpenApi.apis.each do |api, settings|
-        is_descendant = settings[:root_controller].descendants.include? self.class
-        if find_doc_other_place
-          next if is_descendant
-          find_match? settings[:root_controller].descendants.map(&:to_s), self.class.name
-        else
-          is_descendant
-        end and return api
-      end
-    end
-
-    def open_apis
-      $_open_apis ||= DocConverter.new $open_apis
-    end
-
-    def current_path_doc(find_doc_other_place = false)
-      open_apis.dig(current_api(find_doc_other_place), :paths).each do |path, doc|
-        # "/api/v1/nested/2/routes/1" will match "/api/v1/nested/.*/routes/.*"
-        return doc if request.path.match? Regexp.new(path.gsub(/{[^\/]*}/, '.*'))
-      end
-    end
-
-    def params_settings
-      path_doc = current_path_doc(true) || current_path_doc
-      path_doc[request.method.downcase][:parameters]
-    end
 
     def it what
       raise ValidateError.new "[#{@_param['name'].to_sym}] ".concat(what)
