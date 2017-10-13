@@ -64,7 +64,7 @@ module ParamsProcessor
     alias_method :it_has_wrong,      :it_is_not
 
     def it what
-      raise ValidateError.new "[#{@_param['name'].to_sym}] ".concat(what)
+      raise ValidateError.new "`#{@_param['name'].to_sym}` ".concat(what)
     end
     module_function :it
     def must_in(setting); "must in #{setting}"; end

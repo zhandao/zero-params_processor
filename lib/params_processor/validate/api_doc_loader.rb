@@ -4,7 +4,7 @@ module ParamsProcessor
       private
 
       def find_match?(str_array, src)
-        str_array.each { |str| return true if src.match? str.delete('Doc') }
+        str_array.each { |str| return true if src.match? str.sub('Doc', '') }
         false
       end
 
@@ -35,8 +35,8 @@ module ParamsProcessor
       end
 
       def params_settings
-        path_doc = current_path_doc(true) || current_path_doc
-        path_doc[request.method.downcase][:parameters]
+        @path_doc = current_path_doc(true) || current_path_doc
+        @path_doc[request.method.downcase][:parameters]
       end
     end
   end
