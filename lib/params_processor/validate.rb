@@ -23,35 +23,30 @@ module ParamsProcessor
       case current_case
       when :exist
         return !(setting.eql?(true) && not_exist(input))
-
       when :type
         case @_param.type
-          when 'integer' then input_s.match? /^[0-9]*$/
-          when 'boolean' then input_s.in? %w[true false]
-          else; true
+        when 'integer' then input_s.match? /^[0-9]*$/
+        when 'boolean' then input_s.in? %w[true false]
+        else; true
         end
-
       when :size
         if input.is_a? Array
           input.count >= setting[0] && input.count <= setting[1]
         else
           input_s.length >= setting[0] && input_s.length <= setting[1]
         end
-
       when :is
         # TODO
         return input_s.match?(/\A[^@\s]+@[^@\s]+\z/) if setting.eql? 'email'
-
+        true
       when :allowable_values
         case @_param.type
         when 'integer' then setting.include? input.to_i
-        when 'boolean' then setting.map(&:to_s).include? input_s
-        else                setting.include? input_s
+        # when 'boolean' then setting.map(&:to_s).include? input_s
+        else setting.map(&:to_s).include? input_s
         end
-
       when :regexp
         return input_s.match? Regexp.new setting
-
       else
         true
       end

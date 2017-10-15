@@ -23,15 +23,16 @@ module ParamsProcessor
       end
 
       { # INTERFACE_MAPPING
-          name:     %i[name          ],
-          required: %i[required      ],
-          in:       %i[in            ],
-          enum:     %i[schema enum   ],
-          pattern:  %i[schema pattern],
-          regexp:   %i[schema pattern],
-          type:     %i[schema type   ],
-          is:       %i[schema format ],
-          dft:      %i[schema default],
+          name:     %i[ name           ],
+          required: %i[ required       ],
+          in:       %i[ in             ],
+          enum:     %i[ schema enum    ],
+          pattern:  %i[ schema pattern ],
+          regexp:   %i[ schema pattern ],
+          type:     %i[ schema type    ],
+          is:       %i[ schema format  ],
+          dft:      %i[ schema default ],
+          as:       %i[ schema as      ],
       }.each do |method, path|
         define_method method do path.inject(self, &:[]) end # Get value from hash by key path
       end
