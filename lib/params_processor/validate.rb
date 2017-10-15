@@ -1,81 +1,89 @@
-require 'params_processor/validate/param_obj'
+require 'params_processor/config'
 require 'params_processor/doc_converter'
-require 'params_processor/validate/api_doc_loader'
 
 module ParamsProcessor
-  module Validate
-    include ApiDocLoader
+  class Validate
+    class << self
+      def call(input, param_doc)
+        input(input).check! param_doc
+      end
 
-    private
+      def input(input)
+        @input   = input
+        @input_s = input.to_s
+        self
+      end
 
-    # 此处为验证逻辑
-    def it_is(what = :is)
-      current_case = what
-      what    = :required if what.eql? :exist
-      what    = :enum if what.eql? :allowable_values
-      setting = @_param.send what
-      return true if not_exist(setting)
+      def check!(param_doc)
+        @doc = param_doc
+        check if_is_passed
+        check if_is_present
+        check type
+        check size
+        check if_is_entity
+        check if_in_allowable_values
+        check if_match_pattern
+        check is_in_range
+      end
 
-      input   = @_input_under_check
-      input_s = input.to_s
-      return true if !@_param.required? && not_exist(input)
+      def if_is_passed
+        Config.not_passed if @doc.required && @input.nil?
+      end
+      
+      def if_is_present
+        ;
+      end
+      
+      def type
+        case @doc.type
+          when 'integer'; @input_s.match? /^[0-9]*$/
+          when 'boolean'; @input_s.in? %w[true false]
+          else true
+        end or "#{Config.wrong_type} #{@doc.type}"
+      end
 
-      case current_case
-      when :exist
-        return !(setting.eql?(true) && not_exist(input))
-      when :type
-        case @_param.type
-        when 'integer' then input_s.match? /^[0-9]*$/
-        when 'boolean' then input_s.in? %w[true false]
-        else; true
-        end
-      when :size
-        if input.is_a? Array
-          input.count >= setting[0] && input.count <= setting[1]
+      def size
+        return if !@doc.size || @input.nil?
+        # FIXME: 应该检查 doc 中的，而不是输入的
+        if @input.is_a? Array
+          @input.count >= @doc.size[0] && @input.count <= @doc.size[1]
         else
-          input_s.length >= setting[0] && input_s.length <= setting[1]
-        end
-      when :is
+          @input_s.length >= @doc.size[0] && @input_s.length <= @doc.size[1]
+        end or "#{Config.wrong_size} #{@doc.size.join('..')}}"
+      end
+
+      def if_is_entity
+        return if !@doc.is || @input.nil?
         # TODO
-        return input_s.match?(/\A[^@\s]+@[^@\s]+\z/) if setting.eql? 'email'
-        true
-      when :allowable_values
-        case @_param.type
-        when 'integer' then setting.include? input.to_i
-        # when 'boolean' then setting.map(&:to_s).include? input_s
-        else setting.map(&:to_s).include? input_s
+        case @doc.is
+          when 'email'; @input_s.match?(/\A[^@\s]+@[^@\s]+\z/)
+          else true
+        end or "#{Config.is_not_entity} #{@doc.is}"
+      end
+
+      def if_in_allowable_values
+        return if !@doc.enum || @input.nil?
+        case @doc.type
+          when 'integer'; @doc.enum.include? input.to_i
+          # when 'boolean' then @doc.enum.map(&:to_s).include? @input_s
+          else @doc.enum.map(&:to_s).include? @input_s
+        end or "#{Config.not_in_allowable_values} #{@doc.enum.to_s.delete('\"')}"
+      end
+
+      def if_match_pattern
+        return if !@doc.pattern || @input.nil?
+        unless @input_s.match? Regexp.new @doc.pattern
+          "#{Config.not_match_pattern} /#{@doc.pattern}/"
         end
-      when :regexp
-        return input_s.match? Regexp.new setting
-      else
-        true
+      end
+
+      def is_in_range
+        ;
+      end
+
+      def check msg
+        raise ValidationFailed.new " `#{ @doc.name.to_sym}` ".concat(msg) if msg.is_a? String
       end
     end
-
-    def it_is_not(what = :is); !it_is what; end
-    alias_method :it_should_but_not, :it_is_not
-    alias_method :it_is_unmatched,   :it_is_not
-    alias_method :it_is_not_in,      :it_is_not
-    alias_method :it_has_wrong,      :it_is_not
-
-    def it what
-      raise ValidateError.new "`#{@_param['name'].to_sym}` ".concat(what)
-    end
-    module_function :it
-    def must_in(setting); "must in #{setting}"; end
-    def must_be(setting); "must be #{setting}"; end
-
-    # false.blank? is set to be true in Ruby core blank.rb, it would be a big problem here
-    # Tip: use (not_)exist when you wanna know if it have content(not '' / [] / {} ...)
-    # Compare with .nil?: .nil? cannot tell you if the obj have content, only return whether it is a NilClass
-    def exist(what)
-      return true if what.eql? false
-      what.present?
-    end
-    def not_exist(what)
-      !exist what
-    end
-    alias_method :exist?, :exist
-    alias_method :not_exist?, :not_exist
   end
 end
