@@ -27,7 +27,8 @@ module ParamsProcessor
       pattern:  %i[ schema pattern ],
       regexp:   %i[ schema pattern ],
       type:     %i[ schema type    ],
-      is:       %i[ schema format  ],
+      format:   %i[ schema format  ],
+      is:       %i[ schema is      ],
       dft:      %i[ schema default ],
       as:       %i[ schema as      ],
     }.each do |method, path|

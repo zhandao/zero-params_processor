@@ -16,20 +16,22 @@ module ParamsProcessor
 
       def check!(param_doc)
         @doc = param_doc
-        check if_is_passed
-        check if_is_present
-        check type
-        check size
-        check if_is_entity
-        check if_in_allowable_values
-        check if_match_pattern
-        check is_in_range
+        check (if_is_passed do
+          check if_is_present
+          check type
+          check size
+          check if_is_entity
+          check if_in_allowable_values
+          check if_match_pattern
+          check is_in_range
+        end)
       end
 
-      def if_is_passed
-        Config.not_passed if @doc.required && @input.nil?
+      def if_is_passed(&block)
+        return Config.not_passed if @doc.required && @input.nil?
+        self.instance_eval &block unless @input.nil?
       end
-      
+
       def if_is_present
         ;
       end
@@ -38,12 +40,17 @@ module ParamsProcessor
         case @doc.type
           when 'integer'; @input_s.match? /^[0-9]*$/
           when 'boolean'; @input_s.in? %w[true false]
+          when 'number'
+            case @doc.format
+              when 'float'; @input_s.match? /^[0-9]*$|^[0-9]*\.[0-9]*$/
+              else true
+            end or "#{Config.wrong_type} #{@doc.format}"
           else true
         end or "#{Config.wrong_type} #{@doc.type}"
       end
 
       def size
-        return if !@doc.size || @input.nil?
+        return unless @doc.size
         # FIXME: 应该检查 doc 中的，而不是输入的
         if @input.is_a? Array
           @input.count >= @doc.size[0] && @input.count <= @doc.size[1]
@@ -53,7 +60,7 @@ module ParamsProcessor
       end
 
       def if_is_entity
-        return if !@doc.is || @input.nil?
+        return unless @doc.is
         # TODO
         case @doc.is
           when 'email'; @input_s.match?(/\A[^@\s]+@[^@\s]+\z/)
@@ -62,7 +69,7 @@ module ParamsProcessor
       end
 
       def if_in_allowable_values
-        return if !@doc.enum || @input.nil?
+        return unless @doc.enum
         case @doc.type
           when 'integer'; @doc.enum.include? input.to_i
           # when 'boolean' then @doc.enum.map(&:to_s).include? @input_s
@@ -71,7 +78,7 @@ module ParamsProcessor
       end
 
       def if_match_pattern
-        return if !@doc.pattern || @input.nil?
+        return unless @doc.pattern
         unless @input_s.match? Regexp.new @doc.pattern
           "#{Config.not_match_pattern} /#{@doc.pattern}/"
         end

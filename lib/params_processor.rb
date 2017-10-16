@@ -13,7 +13,8 @@ module ParamsProcessor
   def validate_params!
     params_doc.each do |doc|
       @_param_doc = ParamDocObj.new doc
-      Validate.(params[@_param_doc.name.to_sym], @_param_doc)
+      input = @_param_doc.name == 'Token' ? token : params[@_param_doc.name.to_sym]
+      Validate.(input, @_param_doc)
       convert_params_type if @_let_convert
     end
   end
