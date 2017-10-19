@@ -1,5 +1,6 @@
 require 'params_processor/config'
 require 'params_processor/doc_converter'
+require 'params_processor/param_doc_obj'
 
 module ParamsProcessor
   class Validate
@@ -19,6 +20,8 @@ module ParamsProcessor
         check (if_is_passed do
           check if_is_present
           check type
+          check_each_element if @doc.type == 'array'
+          check_each_pair if @doc.type == 'object'
           check size
           check if_is_entity
           check if_in_allowable_values
@@ -38,8 +41,10 @@ module ParamsProcessor
       
       def type
         case @doc.type
-          when 'integer'; @input_s.match? /^[0-9]*$/
+          when 'integer'; @input_s.match? /^-[0-9]*|[0-9]*$/
           when 'boolean'; @input_s.in? %w[true false]
+          when 'array';   @input.is_a? Array
+          when 'object';  @input.is_a? ActionController::Parameters
           when 'number'
             case @doc.format
               when 'float'; @input_s.match? /^[0-9]*$|^[0-9]*\.[0-9]*$/
@@ -85,7 +90,30 @@ module ParamsProcessor
       end
 
       def is_in_range
-        ;
+        rg = @doc.range
+        return unless rg
+        left_op  = rg[:should_neq_min?] ? :< : :<=
+        right_op = rg[:should_neq_max?] ? :< : :<=
+        in_range = rg[:min]&.send(left_op, @input.to_f)
+        in_range &= @input.to_f.send(right_op, rg[:max])
+        "#{Config.out_of_range} #{rg[:min]} #{left_op} x #{right_op} #{rg[:max]}" unless in_range
+      end
+
+      def check_each_element
+        items_doc = ParamDocObj.new name: @doc.name, schema: @doc.items
+        @input.each do |input|
+          Validate.(input, items_doc)
+        end
+      end
+
+      def check_each_pair
+        required = @doc[:schema][:required]
+        @doc.props.each do |name, schema|
+          prop_doc = ParamDocObj.new name: name, required: required.include?(name), schema: schema
+          input = @input
+          Validate.(@input[name], prop_doc)
+          @input = input
+        end
       end
 
       def check msg

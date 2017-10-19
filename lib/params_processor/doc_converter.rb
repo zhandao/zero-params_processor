@@ -5,6 +5,7 @@ module ParamsProcessor
     def initialize(inhert_hash)
       super(inhert_hash)
       convert
+      # puts self
     end
 
     def fill_with_ref(who, ref_to)
