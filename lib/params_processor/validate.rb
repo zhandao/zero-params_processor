@@ -76,7 +76,7 @@ module ParamsProcessor
       def if_in_allowable_values
         return unless @doc.enum
         case @doc.type
-          when 'integer'; @doc.enum.include? input.to_i
+          when 'integer'; @doc.enum.include? @input.to_i
           # when 'boolean' then @doc.enum.map(&:to_s).include? @input_s
           else @doc.enum.map(&:to_s).include? @input_s
         end or "#{Config.not_in_allowable_values} #{@doc.enum.to_s.delete('\"')}"
@@ -110,13 +110,14 @@ module ParamsProcessor
         required = @doc[:schema][:required]
         @doc.props.each do |name, schema|
           prop_doc = ParamDocObj.new name: name, required: required.include?(name), schema: schema
-          input = @input
+          _input = @input
           Validate.(@input[name], prop_doc)
-          @input = input
+          @input = _input
         end
       end
 
       def check msg
+        raise ValidationFailed.new Config.message_for_all if Config.message_for_all.present?
         raise ValidationFailed.new " `#{ @doc.name.to_sym}` ".concat(msg) if msg.is_a? String
       end
     end

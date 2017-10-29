@@ -1,5 +1,9 @@
 module ParamsProcessor
   module Config
+    cattr_accessor :message_for_all do
+      #'parameter validation failed'
+    end
+
     cattr_accessor :prefix do
       'parameter'
     end
