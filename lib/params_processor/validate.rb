@@ -58,7 +58,7 @@ module ParamsProcessor
         return unless @doc.size
         # FIXME: 应该检查 doc 中的，而不是输入的
         if @input.is_a? Array
-          @input.count >= @doc.size[0] && @input.count <= @doc.size[1]
+          @input.size >= @doc.size[0] && @input.size <= @doc.size[1]
         else
           @input_s.length >= @doc.size[0] && @input_s.length <= @doc.size[1]
         end or "#{Config.wrong_size} #{@doc.size.join('..')}}"
@@ -117,8 +117,8 @@ module ParamsProcessor
       end
 
       def check msg
-        raise ValidationFailed.new Config.message_for_all if Config.message_for_all.present?
-        raise ValidationFailed.new " `#{ @doc.name.to_sym}` ".concat(msg) if msg.is_a? String
+        raise ValidationFailed, Config.message_for_all if Config.message_for_all.present?
+        raise ValidationFailed, (" `#{ @doc.name.to_sym}` " << msg) if msg.is_a? String
       end
     end
   end

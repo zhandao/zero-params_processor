@@ -38,7 +38,7 @@ module ParamsProcessor
               input.to_s.eql?('true') ? true : false
             when 'string'
               if p_doc.is == 'date-time'
-                input.match?('-') ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
+                input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
               else
                 input
               end
@@ -70,7 +70,7 @@ module ParamsProcessor
     end
     @permitted
   end
-  alias_method :permitted, :set_permitted
+  alias permitted set_permitted
 
 
   class ValidationFailed < StandardError

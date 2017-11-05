@@ -39,6 +39,6 @@ module ParamsProcessor
     }.each do |method, path|
       define_method method do path.inject(self, &:[]) end # Get value from hash by key path
     end
-    alias_method :required?, :required
+    alias required? required
   end
 end
