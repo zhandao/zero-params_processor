@@ -51,25 +51,27 @@ module ParamsProcessor
   end
 
   def set_permitted
-    if @permitted.nil?
-      doced_keys = params_doc&.map { |ps| ps[:schema][:as] || ps[:name] }
-      params.slice(*doced_keys).each do |key, value|
-        # TODO: 循环和递归 permit
-        value.map!(&:permit!) if value.is_a? Array #ActionController::Parameters
-        instance_variable_set("@_#{key}", value)
-      end
-      exist_not_permit = false
-      keys = params_doc&.map do |ps|
-        schema = ps[:schema]
-        exist_not_permit = true if schema[:not_permit]
-        schema[:permit] || schema[:not_permit] ? (schema[:as] || ps[:name]) : nil
-      end&.compact
-      permitted_keys = doced_keys - keys if exist_not_permit
-      permitted_keys = doced_keys if keys.blank?
-      @permitted = params.permit(*permitted_keys)
+    return @permitted unless @permitted.nil?
+
+    doced_keys = params_doc&.map { |ps| ps[:schema][:as] || ps[:name] }
+    params.slice(*doced_keys).each do |key, value|
+      # TODO: 循环和递归 permit
+      # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
+      #   json 就是 ActionController::Parameters 对象，所以需要循环做一次 permit
+      value.map!(&:permit!) if value&.first&.is_a? ActionController::Parameters
+      instance_variable_set("@_#{key}", value)
     end
-    @permitted
+    exist_not_permit = false
+    keys = params_doc&.map do |ps|
+      schema = ps[:schema]
+      exist_not_permit = true if schema[:not_permit]
+      schema[:permit] || schema[:not_permit] ? (schema[:as] || ps[:name]) : nil
+    end&.compact
+    permitted_keys = doced_keys - keys if exist_not_permit
+    permitted_keys = doced_keys if keys.blank?
+    @permitted = params.permit(*permitted_keys)
   end
+
   alias permitted set_permitted
 
 

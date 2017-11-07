@@ -117,7 +117,7 @@ module ParamsProcessor
       end
 
       def check msg
-        raise ValidationFailed, Config.message_for_all if Config.message_for_all.present?
+        raise ValidationFailed, Config.production_msg if Config.production_msg.present?
         raise ValidationFailed, (" `#{ @doc.name.to_sym}` " << msg) if msg.is_a? String
       end
     end

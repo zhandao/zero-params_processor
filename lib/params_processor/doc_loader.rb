@@ -42,7 +42,7 @@ module ParamsProcessor
 
     def params_doc
       doc = path_doc(true) || path_doc || @path_doc
-      doc[request.method.downcase]&.[](:parameters)
+      doc[request.method.downcase]&.[](:parameters) || [ ]
     end
   end
 end
