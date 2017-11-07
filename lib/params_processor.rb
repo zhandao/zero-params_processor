@@ -69,6 +69,7 @@ module ParamsProcessor
     end&.compact
     permitted_keys = doced_keys - keys if exist_not_permit
     permitted_keys = doced_keys if keys.blank?
+
     @permitted = params.permit(*permitted_keys)
   end
 

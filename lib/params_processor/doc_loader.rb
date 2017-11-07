@@ -25,6 +25,7 @@ module ParamsProcessor
       $_open_apis ||= DocConverter.new $open_apis
     end
 
+    # TODO: 修理 find_doc_other_place 逻辑
     def path_doc(find_doc_other_place = false)
       open_apis.dig(current_api(find_doc_other_place), :paths)&.each do |path, doc|
         same_number_of_slashes = request.path.scan('/') == path.scan('/')
@@ -38,6 +39,7 @@ module ParamsProcessor
         return doc if match_last_word
         @path_doc = doc
       end
+      nil
     end
 
     def params_doc
