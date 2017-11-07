@@ -58,7 +58,7 @@ module ParamsProcessor
       # TODO: 循环和递归 permit
       # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
       #   json 就是 ActionController::Parameters 对象，所以需要循环做一次 permit
-      value.map!(&:permit!) if value&.first&.is_a? ActionController::Parameters
+      value.map!(&:permit!) if value.is_a?(Array) && value.first.is_a?(ActionController::Parameters)
       instance_variable_set("@_#{key}", value)
     end
     exist_not_permit = false
