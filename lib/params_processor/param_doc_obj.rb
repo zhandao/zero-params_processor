@@ -37,7 +37,7 @@ module ParamsProcessor
       items:    %i[ schema items      ],
       props:    %i[ schema properties ],
     }.each do |method, path|
-      define_method method do path.inject(self, &:[]) end # Get value from hash by key path
+      define_method method do path.reduce(self, &:[]) end # Get value from hash by key path
     end
     alias required? required
   end

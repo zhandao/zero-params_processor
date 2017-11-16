@@ -10,8 +10,8 @@ module ParamsProcessor
       end
 
       def input(input)
-        @input   = input
-        @input_s = input.to_s
+        @input     = input
+        @str_input = input.to_s
         self
       end
 
@@ -26,13 +26,13 @@ module ParamsProcessor
           check if_is_entity
           check if_in_allowable_values
           check if_match_pattern
-          check is_in_range
+          check if_is_in_range
         end)
       end
 
       def if_is_passed(&block)
         return Config.not_passed if @doc.required && @input.nil?
-        self.instance_eval &block unless @input.nil?
+        self.instance_eval(&block) unless @input.nil?
       end
 
       def if_is_present
@@ -41,16 +41,16 @@ module ParamsProcessor
       
       def type
         case @doc.type
-          when 'integer'; @input_s.match? /^-[0-9]*|[0-9]*$/
-          when 'boolean'; @input_s.in? %w[true false]
-          when 'array';   @input.is_a? Array
-          when 'object';  @input.is_a? ActionController::Parameters
-          when 'number'
-            case @doc.format
-              when 'float'; @input_s.match? /^[0-9]*$|^[0-9]*\.[0-9]*$/
-              else true
-            end or "#{Config.wrong_type} #{@doc.format}"
+        when 'integer' then @str_input.match? /^-[0-9]*|[0-9]*$/
+        when 'boolean' then @str_input.in? %w[true false]
+        when 'array'   then @input.is_a? Array
+        when 'object'  then @input.is_a? ActionController::Parameters
+        when 'number'
+          case @doc.format
+          when 'float' then @str_input.match? /^[0-9]*$|^[0-9]*\.[0-9]*$/
           else true
+          end or "#{Config.wrong_type} #{@doc.format}"
+        else true
         end or "#{Config.wrong_type} #{@doc.type}"
       end
 
@@ -60,7 +60,7 @@ module ParamsProcessor
         if @input.is_a? Array
           @input.size >= @doc.size[0] && @input.size <= @doc.size[1]
         else
-          @input_s.length >= @doc.size[0] && @input_s.length <= @doc.size[1]
+          @str_input.length >= @doc.size[0] && @str_input.length <= @doc.size[1]
         end or "#{Config.wrong_size} #{@doc.size.join('..')}}"
       end
 
@@ -68,35 +68,35 @@ module ParamsProcessor
         return unless @doc.is
         # TODO
         case @doc.is
-          when 'email'; @input_s.match?(/\A[^@\s]+@[^@\s]+\z/)
-          else true
+        when 'email'; @str_input.match?(/\A[^@\s]+@[^@\s]+\z/)
+        else true
         end or "#{Config.is_not_entity} #{@doc.is}"
       end
 
       def if_in_allowable_values
         return unless @doc.enum
         case @doc.type
-          when 'integer'; @doc.enum.include? @input.to_i
-          # when 'boolean' then @doc.enum.map(&:to_s).include? @input_s
-          else @doc.enum.map(&:to_s).include? @input_s
+        when 'integer'; @doc.enum.include? @input.to_i
+        # when 'boolean' then @doc.enum.map(&:to_s).include? @str_input
+        else @doc.enum.map(&:to_s).include? @str_input
         end or "#{Config.not_in_allowable_values} #{@doc.enum.to_s.delete('\"')}"
       end
 
       def if_match_pattern
         return unless @doc.pattern
-        unless @input_s.match? Regexp.new @doc.pattern
+        unless @str_input.match? Regexp.new @doc.pattern
           "#{Config.not_match_pattern} /#{@doc.pattern}/"
         end
       end
 
-      def is_in_range
+      def if_is_in_range
         rg = @doc.range
         return unless rg
         left_op  = rg[:should_neq_min?] ? :< : :<=
         right_op = rg[:should_neq_max?] ? :< : :<=
-        in_range = rg[:min]&.send(left_op, @input.to_f)
-        in_range &= @input.to_f.send(right_op, rg[:max])
-        "#{Config.out_of_range} #{rg[:min]} #{left_op} x #{right_op} #{rg[:max]}" unless in_range
+        is_in_range = rg[:min]&.send(left_op, @input.to_f)
+        is_in_range &= @input.to_f.send(right_op, rg[:max])
+        "#{Config.out_of_range} #{rg[:min]} #{left_op} x #{right_op} #{rg[:max]}" unless is_in_range
       end
 
       def check_each_element

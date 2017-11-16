@@ -26,7 +26,7 @@ module ParamsProcessor
             fill_with_ref request_body, :requestBodies if request_body.present?
             request_body&.[](:content)&.each do |media, media_doc|
               media_doc.each do |mtype, mtype_doc|
-                fill_with_ref mtype_doc, :schemas
+                fill_with_ref mtype_doc, :schemas if mtype == 'schema'
               end
             end
 

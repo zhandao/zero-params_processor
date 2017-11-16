@@ -1,10 +1,8 @@
 require 'params_processor/version'
 require 'params_processor/config'
-require 'params_processor/doc_loader'
 require 'params_processor/validate'
 
 module ParamsProcessor
-  include DocLoader
 
   private
 
@@ -32,17 +30,15 @@ module ParamsProcessor
       input = params[name]
       params[name] =
           case type
-            when 'integer'
-              input.to_i
-            when 'boolean'
-              input.to_s.eql?('true') ? true : false
-            when 'string'
-              if p_doc.is == 'date-time'
-                input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
-              else
-                input
-              end
-            else input
+          when 'integer' then input.to_i
+          when 'boolean' then input.to_s.eql?('true') ? true : false
+          when 'string'
+            if p_doc.is == 'date-time'
+              input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
+            else
+              input
+            end
+          else input
           end if input.is_a? String
 
       # mapping param key
@@ -74,6 +70,15 @@ module ParamsProcessor
   end
 
   alias permitted set_permitted
+
+  def params_doc
+    $_open_apis ||= DocConverter.new $open_apis
+    current_api = $api_paths_index[self.class.controller_path]
+    route_path = ::OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
+    path_doc = $_open_apis[current_api][:paths][route_path]
+    # 考虑没有 doc 时的 before action
+    path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
+  end
 
 
   class ValidationFailed < StandardError
