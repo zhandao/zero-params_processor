@@ -3,7 +3,6 @@ require 'params_processor/config'
 require 'params_processor/validate'
 
 module ParamsProcessor
-
   private
 
   # TODO: type support: string integer boolean
@@ -11,7 +10,7 @@ module ParamsProcessor
     params_doc&.each do |doc|
       @_param_doc = ParamDocObj.new doc
       input = @_param_doc.name == 'Token' ? token : params[@_param_doc.name.to_sym]
-      Validate.(input, @_param_doc)
+      Validate.(input, based_on: @_param_doc)
       convert_params_type if convert
     end
   end
@@ -29,17 +28,17 @@ module ParamsProcessor
       params[name] = p_doc.dft if params[name].nil? && !p_doc.dft.nil?
       input = params[name]
       params[name] =
-          case type
-          when 'integer' then input.to_i
-          when 'boolean' then input.to_s.eql?('true') ? true : false
-          when 'string'
-            if p_doc.is == 'date-time'
-              input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
-            else
-              input
-            end
-          else input
-          end if input.is_a? String
+        case type
+        when 'integer' then input.to_i
+        when 'boolean' then input.to_s.eql?('true') ? true : false
+        when 'string'
+          if p_doc.is == 'date-time'
+            input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
+          else
+            input
+          end
+        else input
+        end if input.is_a? String
 
       # mapping param key
       params[p_doc.as] = params.delete(name) if p_doc.as.present? && !params[name].nil?
@@ -47,21 +46,24 @@ module ParamsProcessor
   end
 
   def set_permitted
-    return @permitted unless @permitted.nil?
-
-    doced_keys = params_doc&.map { |ps| ps[:schema][:as] || ps[:name] }
+    doced_keys = params_doc&.map { |p| p[:schema][:as] || p[:name] }
     params.slice(*doced_keys).each do |key, value|
       # TODO: 循环和递归 permit
       # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
       #   json 就是 ActionController::Parameters 对象，所以需要循环做一次 permit
       value.map!(&:permit!) if value.is_a?(Array) && value.first.is_a?(ActionController::Parameters)
       instance_variable_set("@_#{key}", value)
+      if @route_path.match?(/\{#{key}\}/)
+        model = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
+        model_instance = model.singularize.camelize.constantize.find(value) rescue "#{model.camelize}Error".constantize.not_found # TODO HACK
+        instance_variable_set("@#{model.singularize}", model_instance)
+      end
     end
+
     exist_not_permit = false
-    keys = params_doc&.map do |ps|
-      schema = ps[:schema]
-      exist_not_permit = true if schema[:not_permit]
-      schema[:permit] || schema[:not_permit] ? (schema[:as] || ps[:name]) : nil
+    keys = params_doc&.map do |p|
+      exist_not_permit = true if p[:schema][:not_permit]
+      p[:schema][:permit] || p[:schema][:not_permit] ? (p[:schema][:as] || p[:name]) : nil
     end&.compact
     permitted_keys = doced_keys - keys if exist_not_permit
     permitted_keys = doced_keys if keys.blank?
@@ -69,13 +71,13 @@ module ParamsProcessor
     @permitted = params.permit(*permitted_keys)
   end
 
-  alias permitted set_permitted
+  def permitted; @permitted end
 
   def params_doc
-    $_open_apis ||= DocConverter.new $open_apis
-    current_api = $api_paths_index[self.class.controller_path]
-    route_path = ::OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
-    path_doc = $_open_apis[current_api][:paths][route_path]
+    DocConverter.docs ||= DocConverter.new OpenApi.docs
+    current_api = OpenApi.paths_index[self.class.controller_path]
+    @route_path = ::OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
+    path_doc = DocConverter.docs[current_api][:paths][@route_path]
     # 考虑没有 doc 时的 before action
     path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
   end

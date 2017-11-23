@@ -7,7 +7,7 @@ module ParamsProcessor
           min: schema[:minimum] || 0,
           max: schema[:maximum] || Float::INFINITY,
           should_neq_min?: schema[:exclusiveMinimum] || false,
-          should_neq_max?: schema[:exclusiveMaximum] || false,
+          should_neq_max?: schema[:exclusiveMaximum] || false
       }
     end
 

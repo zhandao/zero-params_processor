@@ -5,8 +5,8 @@ require 'params_processor/param_doc_obj'
 module ParamsProcessor
   class Validate
     class << self
-      def call(input, param_doc)
-        input(input).check! param_doc
+      def call(input, based_on:)
+        input(input).check! based_on
       end
 
       def input(input)
@@ -36,22 +36,25 @@ module ParamsProcessor
       end
 
       def if_is_present
-        ;
+        #
       end
-      
+
       def type
         case @doc.type
-        when 'integer' then @str_input.match? /^-[0-9]*|[0-9]*$/
-        when 'boolean' then @str_input.in? %w[true false]
-        when 'array'   then @input.is_a? Array
-        when 'object'  then @input.is_a? ActionController::Parameters
-        when 'number'
-          case @doc.format
-          when 'float' then @str_input.match? /^[0-9]*$|^[0-9]*\.[0-9]*$/
+          when 'integer' then @str_input.match?(/^-[0-9]*|[0-9]*$/)
+          when 'boolean' then @str_input.in? %w[true false]
+          when 'array'   then @input.is_a? Array
+          when 'object'  then @input.is_a? ActionController::Parameters
+          when 'number'  then _number_type
           else true
-          end or "#{Config.wrong_type} #{@doc.format}"
-        else true
         end or "#{Config.wrong_type} #{@doc.type}"
+      end
+
+      def _number_type
+        case @doc.format
+          when 'float' then @str_input.match?(/^[0-9]*$|^[0-9]*\.[0-9]*$/)
+          else true
+        end or "#{Config.wrong_type} #{@doc.format}"
       end
 
       def size
@@ -76,7 +79,7 @@ module ParamsProcessor
       def if_in_allowable_values
         return unless @doc.enum
         case @doc.type
-        when 'integer'; @doc.enum.include? @input.to_i
+        when 'integer' then @doc.enum.include? @input.to_i
         # when 'boolean' then @doc.enum.map(&:to_s).include? @str_input
         else @doc.enum.map(&:to_s).include? @str_input
         end or "#{Config.not_in_allowable_values} #{@doc.enum.to_s.delete('\"')}"
@@ -84,7 +87,7 @@ module ParamsProcessor
 
       def if_match_pattern
         return unless @doc.pattern
-        unless @str_input.match? Regexp.new @doc.pattern
+        unless @str_input.match?(Regexp.new(@doc.pattern))
           "#{Config.not_match_pattern} /#{@doc.pattern}/"
         end
       end
@@ -102,7 +105,7 @@ module ParamsProcessor
       def check_each_element
         items_doc = ParamDocObj.new name: @doc.name, schema: @doc.items
         @input.each do |input|
-          Validate.(input, items_doc)
+          Validate.(input, based_on: items_doc)
         end
       end
 
@@ -111,7 +114,7 @@ module ParamsProcessor
         @doc.props.each do |name, schema|
           prop_doc = ParamDocObj.new name: name, required: required.include?(name), schema: schema
           _input = @input
-          Validate.(@input[name], prop_doc)
+          Validate.(@input[name], based_on: prop_doc)
           @input = _input
         end
       end
