@@ -8,10 +8,10 @@ module ParamsProcessor
   # TODO: type support: string integer boolean
   def validate_params!(convert = nil)
     params_doc&.each do |doc|
-      @_param_doc = ParamDocObj.new doc
-      input = @_param_doc.name == 'Token' ? token : params[@_param_doc.name.to_sym]
-      Validate.(input, based_on: @_param_doc)
-      convert_params_type if convert
+      param_doc = ParamDocObj.new doc
+      input = param_doc.name == 'Token' ? token : params[param_doc.name.to_sym]
+      Validate.(input, based_on: param_doc)
+      _convert_param_type(param_doc) if convert
     end
   end
 
@@ -19,30 +19,34 @@ module ParamsProcessor
     validate_params! convert = true
   end
 
-  # TODO: 循环和递归转换
-  def convert_params_type
+  def convert_param_types
     params_doc&.each do |doc|
-      p_doc = ParamDocObj.new doc
-      type, name = p_doc.type, p_doc.name.to_sym
-      # TODO: load default from db, JSON.load Floor.columns[3].default / to_json
-      params[name] = p_doc.dft if params[name].nil? && !p_doc.dft.nil?
-      input = params[name]
-      params[name] =
-        case type
-        when 'integer' then input.to_i
-        when 'boolean' then input.to_s.eql?('true') ? true : false
-        when 'string'
-          if p_doc.is == 'date-time'
-            input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
-          else
-            input
-          end
-        else input
-        end if input.is_a? String
-
-      # mapping param key
-      params[p_doc.as] = params.delete(name) if p_doc.as.present? && !params[name].nil?
+      _convert_param_type(doc)
     end
+  end
+
+  # TODO: 循环和递归转换
+  def _convert_param_type(doc)
+    p_doc = ParamDocObj.new doc
+    type, name = p_doc.type, p_doc.name.to_sym
+    # TODO: load default from db, JSON.load Floor.columns[3].default / to_json
+    params[name] = p_doc.dft if params[name].nil? && !p_doc.dft.nil?
+    input = params[name]
+    params[name] =
+      case type
+      when 'integer' then input.to_i
+      when 'boolean' then input.to_s.eql?('true') ? true : false
+      when 'string'
+        if p_doc.is == 'date-time'
+          input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
+        else
+          input
+        end
+      else input
+      end if input.is_a? String
+
+    # mapping param key
+    params[p_doc.as] = params.delete(name) if p_doc.as.present? && !params[name].nil?
   end
 
   def set_permitted
@@ -52,11 +56,13 @@ module ParamsProcessor
       # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
       #   json 就是 ActionController::Parameters 对象，所以需要循环做一次 permit
       value.map!(&:permit!) if value.is_a?(Array) && value.first.is_a?(ActionController::Parameters)
-      instance_variable_set("@_#{key}", value)
+      instance_variable_set("@#{key}", value)
       if @route_path.match?(/\{#{key}\}/)
-        model = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
-        model_instance = model.singularize.camelize.constantize.find(value) rescue "#{model.camelize}Error".constantize.not_found # TODO HACK
-        instance_variable_set("@#{model.singularize}", model_instance)
+        ctrl_name = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
+        if (model = Object.const_get(ctrl_name.singularize.camelize) rescue false)
+          model_instance = model.find(value) rescue "#{ctrl_name.camelize}Error".constantize.not_found! # TODO HACK
+        end
+        instance_variable_set("@#{ctrl_name.singularize}", model_instance)
       end
     end
 
