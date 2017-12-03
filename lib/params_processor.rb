@@ -10,7 +10,8 @@ module ParamsProcessor
     params_doc&.each do |doc|
       param_doc = ParamDocObj.new doc
       input = param_doc.name == 'Token' ? token : params[param_doc.name.to_sym]
-      Validate.(input, based_on: param_doc)
+      error_class = "#{controller_name.camelize}Error".constantize rescue nil
+      Validate.(input, based_on: param_doc, raise: error_class)
       _convert_param_type(param_doc) if convert
     end
   end
@@ -58,11 +59,12 @@ module ParamsProcessor
       value.map!(&:permit!) if value.is_a?(Array) && value.first.is_a?(ActionController::Parameters)
       instance_variable_set("@#{key}", value)
       if @route_path.match?(/\{#{key}\}/)
-        ctrl_name = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
-        if (model = Object.const_get(ctrl_name.singularize.camelize) rescue false)
-          model_instance = model.find(value) rescue "#{ctrl_name.camelize}Error".constantize.not_found! # TODO HACK
+        whos_id = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
+        if (model = Object.const_get(whos_id.singularize.camelize) rescue false)
+          error_class = "#{whos_id.camelize}Error".constantize rescue ApiError
+          model_instance = model.find(value) rescue error_class.not_found! # TODO HACK
         end
-        instance_variable_set("@#{ctrl_name.singularize}", model_instance)
+        instance_variable_set("@#{whos_id.singularize}", model_instance)
       end
     end
 

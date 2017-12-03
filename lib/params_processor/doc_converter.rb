@@ -17,6 +17,7 @@ module ParamsProcessor
     end
 
     def convert
+      return if blank?
       self.each do |_api, api_doc|
         @api_components = api_doc[:components]
         api_doc[:paths].each do |_path, path_doc|
