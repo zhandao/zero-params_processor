@@ -22,12 +22,12 @@ module ParamsProcessor
           check if_is_present
           check type
           check_each_element if @doc.type == 'array'
-          check_each_pair if @doc.type == 'object'
-          check size
-          check if_is_entity
-          check if_in_allowable_values
-          check if_match_pattern
-          check if_is_in_range
+          check_each_pair    if @doc.type == 'object'
+          check size                   if @doc.size
+          check if_is_entity           if @doc.is
+          check if_in_allowable_values if @doc.enum
+          check if_match_pattern       if @doc.pattern
+          check if_is_in_range         if @doc.range
         end)
       end
 
@@ -59,7 +59,6 @@ module ParamsProcessor
       end
 
       def size
-        return unless @doc.size
         # FIXME: 应该检查 doc 中的，而不是输入的
         if @input.is_a? Array
           @input.size >= @doc.size[0] && @input.size <= @doc.size[1]
@@ -69,7 +68,6 @@ module ParamsProcessor
       end
 
       def if_is_entity
-        return unless @doc.is
         # TODO
         case @doc.is
         when 'email'; @str_input.match?(/\A[^@\s]+@[^@\s]+\z/)
@@ -78,7 +76,6 @@ module ParamsProcessor
       end
 
       def if_in_allowable_values
-        return unless @doc.enum
         case @doc.type
         when 'integer' then @doc.enum.include? @input.to_i
         # when 'boolean' then @doc.enum.map(&:to_s).include? @str_input
@@ -87,7 +84,6 @@ module ParamsProcessor
       end
 
       def if_match_pattern
-        return unless @doc.pattern
         unless @str_input.match?(Regexp.new(@doc.pattern))
           [:not_match_pattern, "/#{@doc.pattern}/"]
         end
@@ -95,7 +91,6 @@ module ParamsProcessor
 
       def if_is_in_range
         rg = @doc.range
-        return unless rg
         left_op  = rg[:should_neq_min?] ? :< : :<=
         right_op = rg[:should_neq_max?] ? :< : :<=
         is_in_range = rg[:min]&.send(left_op, @input.to_f)
@@ -122,6 +117,7 @@ module ParamsProcessor
 
       def check msg
         return unless msg.is_a? Array
+        @error_class.send("#{@doc.name}_#{msg.first}!") if @error_class.respond_to? "#{@doc.name}_#{msg.first}!"
         @error_class.send("#{msg.first}!") if @error_class.respond_to? msg.first
         raise ValidationFailed, Config.production_msg if Config.production_msg.present?
 

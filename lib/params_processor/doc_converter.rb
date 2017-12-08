@@ -39,10 +39,10 @@ module ParamsProcessor
               required = form[:schema][:required] || [ ]
               form[:schema][:properties].each do |name, prop_schema|
                 (action_doc[:parameters] ||= [ ]) << {
-                    name: name,
-                    in: 'form',
-                    required: required.include?(name),
-                    schema: prop_schema
+                    'name' => name,
+                    'in' => 'form',
+                    'required' => required.include?(name),
+                    'schema' => prop_schema
                 }
               end
             end
