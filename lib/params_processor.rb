@@ -21,33 +21,18 @@ module ParamsProcessor
   end
 
   def convert_param_types
-    params_doc&.each do |doc|
-      _convert_param_type(doc)
-    end
+    params_doc&.each { |doc| _convert_param_type(doc) }
   end
 
   # TODO: 循环和递归转换
   def _convert_param_type(doc)
-    p_doc = ParamDocObj.new doc
-    type, name = p_doc.type, p_doc.name.to_sym
-    # TODO: load default from db, JSON.load Floor.columns[3].default / to_json
-    params[name] = p_doc.dft if params[name].nil? && !p_doc.dft.nil?
-    input = params[name]
-    params[name] =
-      case type
-      when 'integer' then input.to_i
-      when 'boolean' then input.to_s.eql?('true') ? true : false
-      when 'string'
-        if p_doc.is == 'date-time'
-          input['-'] ? Time.new(*input.gsub(/ |:/, '-').split('-')) : Time.at(input.to_i)
-        else
-          input
-        end
-      else input
-      end if input.is_a? String
+    name = doc.name.to_sym
+    params[name] = doc.dft if params[name].nil? && !doc.dft.nil?
+    return if params[name].nil?
 
+    params[name] = TypeConvert.(params[name], based_on: doc)
     # mapping param key
-    params[p_doc.as] = params.delete(name) if p_doc.as.present? && !params[name].nil?
+    params[doc.as] = params.delete(name) if doc.as.present?
   end
 
   def set_permitted

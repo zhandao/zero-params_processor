@@ -1,6 +1,7 @@
 require 'params_processor/config'
 require 'params_processor/doc_converter'
 require 'params_processor/param_doc_obj'
+require 'params_processor/type_convert'
 
 module ParamsProcessor
   class Validate
@@ -37,25 +38,41 @@ module ParamsProcessor
       end
 
       def if_is_present
-        #
+        [:is_blank, ''] if !@doc.blankable && @input.blank?
       end
 
+      # TODO: combined type
       def type
         case @doc.type
-          when 'integer' then @str_input.match?(/^-[0-9]*|[0-9]*$/)
-          when 'boolean' then @str_input.in? %w[true false]
-          when 'array'   then @input.is_a? Array
-          when 'object'  then @input.is_a? ActionController::Parameters
-          when 'number'  then _number_type
-          else true
+        when 'integer' then @str_input.match?(/^-?\d*$/)
+        when 'boolean' then @str_input.in? %w[ true 1 false 0 ]
+        when 'array'   then @input.is_a? Array
+        when 'object'  then @input.is_a? ActionController::Parameters
+        when 'number'  then _number_type
+        when 'string'  then _string_type
+        else true
         end or [:wrong_type, @doc.format.to_s]
       end
 
       def _number_type
         case @doc.format
-          when 'float' then @str_input.match?(/^[0-9]*$|^[0-9]*\.[0-9]*$/)
-          else true
+        when 'float'  then @str_input.match?(/^[-+]?\d*\.?\d+$/)
+        when 'double' then @str_input.match?(/^[-+]?\d*\.?\d+$/)
+        else true
         end or [:wrong_type, @doc.format.to_s]
+      end
+
+      def _string_type
+        return false unless @input.is_a? String
+
+        case @doc.format
+        when 'date'      then parse_time!(Date)
+        when 'date-time' then parse_time!(DateTime)
+        when 'base64'    then Base64.strict_decode64(@input)
+        else true
+        end
+      rescue ArgumentError
+        false
       end
 
       def size
@@ -91,11 +108,16 @@ module ParamsProcessor
 
       def if_is_in_range
         rg = @doc.range
+        fmt = fmt.tr('-', '_').camelize if (fmt = @doc.format)&.match?('date')
+        min = fmt ? parse_time!(fmt, rg[:min]) : rg[:min]
+        max = fmt ? parse_time!(fmt, rg[:max]) : rg[:max]
+        @input = fmt ? parse_time!(fmt, @input) : @input.to_f
+
         left_op  = rg[:should_neq_min?] ? :< : :<=
         right_op = rg[:should_neq_max?] ? :< : :<=
-        is_in_range = rg[:min]&.send(left_op, @input.to_f)
-        is_in_range &= @input.to_f.send(right_op, rg[:max])
-        [:out_of_range, "#{rg[:min]} #{left_op} x #{right_op} #{rg[:max]}"] unless is_in_range
+        is_in_range = min&.send(left_op, @input)
+        is_in_range &= @input.to_f.send(right_op, max)
+        [:out_of_range, "#{min} #{left_op} x #{right_op} #{max}"] unless is_in_range
       end
 
       def check_each_element
@@ -123,6 +145,14 @@ module ParamsProcessor
 
         msg = "#{Config.send(msg.first)}#{' ' + msg.last if msg.last.present?}"
         raise ValidationFailed, (" `#{ @doc.name.to_sym}` " << msg)
+      end
+
+      def parse_time!(cls, value = nil)
+        if @doc.pattern
+          cls.send(:strptime, value || @input, @doc.pattern)
+        else
+          cls.send(:parse, value || @input)
+        end
       end
     end
   end
