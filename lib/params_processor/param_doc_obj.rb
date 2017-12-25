@@ -4,7 +4,7 @@ module ParamsProcessor
     def range
       return if (schema.keys & %w[ minimum maximum ]).blank?
       {
-          min: schema[:minimum] || 0,
+          min: schema[:minimum] || -Float::INFINITY,
           max: schema[:maximum] || Float::INFINITY,
           should_neq_min?: schema[:exclusiveMinimum] || false,
           should_neq_max?: schema[:exclusiveMaximum] || false

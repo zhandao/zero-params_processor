@@ -32,8 +32,8 @@ module ParamsProcessor
         case @doc.format
         when 'date'      then parse_time(Date)
         when 'date-time' then parse_time(DateTime)
-        when 'base64'    then Base64.strict_decode64(@input)
-        else @input
+        when 'base64'    then @input # Base64.strict_decode64(@input)
+        else @input.to_s
         end
       end
 
@@ -44,15 +44,15 @@ module ParamsProcessor
       def object
         @input
       end
-    end
 
-    # helpers
+      # helpers
 
-    def parse_time(cls)
-      if @doc.pattern
-        cls.send(:strptime, @input, @doc.pattern)
-      else
-        cls.send(:parse, @input)
+      def parse_time(cls)
+        if @doc.pattern
+          cls.send(:strptime, @input, @doc.pattern)
+        else
+          cls.send(:parse, @input)
+        end
       end
     end
   end

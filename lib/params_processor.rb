@@ -3,8 +3,6 @@ require 'params_processor/config'
 require 'params_processor/validate'
 
 module ParamsProcessor
-  private
-
   # TODO: type support: string integer boolean
   def validate_params!(convert = nil)
     params_doc&.each do |doc|
@@ -36,40 +34,53 @@ module ParamsProcessor
   end
 
   def set_permitted
-    doced_keys = params_doc&.map { |p| p[:schema][:as] || p[:name] }
+    return if params_doc.nil?
+    doced_keys = params_doc.map { |p| p[:schema][:as] || p[:name] }
     params.slice(*doced_keys).each do |key, value|
-      # TODO: 循环和递归 permit
-      # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
-      #   json 就是 ActionController::Parameters 对象，所以需要循环做一次 permit
-      value.map!(&:permit!) if value.is_a?(Array) && value.first.is_a?(ActionController::Parameters)
       instance_variable_set("@#{key}", value)
-      if @route_path.match?(/\{#{key}\}/)
-        whos_id = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
-        if (model = Object.const_get(whos_id.singularize.camelize) rescue false)
-          error_class = "#{whos_id.camelize}Error".constantize rescue ApiError
-          model_instance = model.find(value) rescue error_class.not_found! # TODO HACK
-        end
-        instance_variable_set("@#{whos_id.singularize}", model_instance)
-      end
+      _permit_hash_and_array(value)
+      _auto_find_by_id(key, value)
     end
 
     exist_not_permit = false
-    keys = params_doc&.map do |p|
-      exist_not_permit = true if p[:schema][:not_permit]
-      p[:schema][:permit] || p[:schema][:not_permit] ? (p[:schema][:as] || p[:name]) : nil
-    end&.compact
+    keys = params_doc.map do |p|
+      npmt = p[:schema][:not_permit]
+      pmt = p[:schema][:permit]
+      next unless npmt || pmt
+      exist_not_permit = true if npmt
+      p[:schema][:as] || p[:name]
+    end.compact
     permitted_keys = doced_keys - keys if exist_not_permit
-    permitted_keys = doced_keys if keys.blank?
+    permitted_keys = doced_keys if keys.blank? # TODO: MOVE
 
-    @permitted = params.permit(*permitted_keys)
+    @permitted = params.permit *(permitted_keys || [ ])
   end
 
   def permitted; @permitted end
 
+  def _permit_hash_and_array(value)
+    # TODO: 循环和递归 permit
+    # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
+    #   json 就是 ActionController::Parameters 对象，所以需要循环做一次 permit
+    value.map!(&:permit!) if value.is_a?(Array) && value.first.is_a?(ActionController::Parameters)
+  end
+
+  def _auto_find_by_id(key, value)
+    return unless @route_path.match?(/\{#{key}\}/)
+
+    whos_id = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
+    model = Object.const_get(whos_id.singularize.camelize) rescue false
+    if model
+      error_class = "#{whos_id.camelize}Error".constantize rescue ApiError
+      model_instance = model.find(value) rescue error_class.not_found! # TODO HACK
+      instance_variable_set("@#{whos_id.singularize}", model_instance)
+    end
+  end
+
   def params_doc
     DocConverter.docs ||= DocConverter.new OpenApi.docs
     current_api = OpenApi.paths_index[self.class.controller_path]
-    @route_path = ::OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
+    @route_path = OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
     path_doc = DocConverter.docs[current_api][:paths][@route_path]
     # 考虑没有 doc 时的 before action
     path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
