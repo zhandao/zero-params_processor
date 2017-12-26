@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'params_processor_helper'
 
 RSpec.describe ParamsProcessor do
   it 'has a version number' do
@@ -6,11 +7,12 @@ RSpec.describe ParamsProcessor do
   end
 
 
-  describe '#params_doc' do
-    it { expect(GoodsController.new.params_doc.map(&:deep_symbolize_keys)).to eq [ OpenApi.info, OpenApi.id ] }
+  desc :params_doc do
+    called get: [ OpenApi.info, OpenApi.id ]
   end
 
-  describe '#validate_params!' do
-    it { expect { GoodsController.new.validate_params! }.not_to raise_error }
+
+  desc :validate_params! do
+    called raise: false
   end
 end

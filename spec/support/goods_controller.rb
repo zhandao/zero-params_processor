@@ -1,10 +1,12 @@
+require 'action_controller'
+
 class GoodsController
   include ParamsProcessor
 
   attr_accessor :params
 
   def initialize(params = { id: 1, info: 'info' })
-    self.params = params
+    self.params = ActionController::Parameters.new(params)
   end
 
   def self.controller_path

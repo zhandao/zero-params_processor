@@ -3,11 +3,12 @@ require 'params_processor/config'
 require 'params_processor/validate'
 
 module ParamsProcessor
-  # TODO: type support: string integer boolean
+  private
+
   def validate_params!(convert = nil)
     params_doc&.each do |doc|
       param_doc = ParamDocObj.new doc
-      input = param_doc.name == 'Token' ? token : params[param_doc.name.to_sym]
+      input = param_doc.name == 'Token' ? token : params[param_doc.name.to_sym] # TODO: move
       error_class = "#{controller_name.camelize}Error".constantize rescue nil
       Validate.(input, based_on: param_doc, raise: error_class)
       _convert_param_type(param_doc) if convert
@@ -22,7 +23,6 @@ module ParamsProcessor
     params_doc&.each { |doc| _convert_param_type(doc) }
   end
 
-  # TODO: 循环和递归转换
   def _convert_param_type(doc)
     name = doc.name.to_sym
     params[name] = doc.dft if params[name].nil? && !doc.dft.nil?
@@ -36,17 +36,11 @@ module ParamsProcessor
   def set_permitted
     return if params_doc.nil?
     doced_keys = params_doc.map { |p| p[:schema][:as] || p[:name] }
-    params.slice(*doced_keys).each do |key, value|
-      instance_variable_set("@#{key}", value)
-      _permit_hash_and_array(value)
-      _auto_find_by_id(key, value)
-    end
+    _set_instance_var(doced_keys)
 
     exist_not_permit = false
     keys = params_doc.map do |p|
-      npmt = p[:schema][:not_permit]
-      pmt = p[:schema][:permit]
-      next unless npmt || pmt
+      next unless (npmt = p[:schema][:not_permit]) || (pmt = p[:schema][:permit])
       exist_not_permit = true if npmt
       p[:schema][:as] || p[:name]
     end.compact
@@ -58,6 +52,14 @@ module ParamsProcessor
 
   def permitted; @permitted end
 
+  def _set_instance_var(doced_keys)
+    params.slice(*doced_keys).each do |key, value|
+      instance_variable_set("@#{key}", value)
+      _permit_hash_and_array(value)
+      _auto_find_by_id(key, value) if @route_path.match?(/\{#{key}\}/)
+    end
+  end
+
   def _permit_hash_and_array(value)
     # TODO: 循环和递归 permit
     # 见 book_record 的 Doc，params[:data] = [{name..}, {name..}]，注意
@@ -66,15 +68,10 @@ module ParamsProcessor
   end
 
   def _auto_find_by_id(key, value)
-    return unless @route_path.match?(/\{#{key}\}/)
-
-    whos_id = key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')
-    model = Object.const_get(whos_id.singularize.camelize) rescue false
-    if model
-      error_class = "#{whos_id.camelize}Error".constantize rescue ApiError
-      model_instance = model.find(value) rescue error_class.not_found! # TODO HACK
-      instance_variable_set("@#{whos_id.singularize}", model_instance)
-    end
+    whos_id = (key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')).singularize
+    model = whos_id.camelize.constantize rescue return
+    model_instance = model.find_by(id: value) || self.class.error_cls.not_found! # TODO HACK
+    instance_variable_set("@#{whos_id}", model_instance)
   end
 
   def params_doc
@@ -83,7 +80,8 @@ module ParamsProcessor
     @route_path = OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
     path_doc = DocConverter.docs[current_api][:paths][@route_path]
     # 考虑没有 doc 时的 before action
-    path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
+    doc = path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
+    doc.map { |p| p.try(:deep_symbolize_keys) }
   end
 
 

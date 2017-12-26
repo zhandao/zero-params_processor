@@ -7,6 +7,7 @@ module ParamsProcessor
         convert
       end
 
+      # TODO: 循环和递归转换
       def convert
         send(@doc.type)
       rescue NoMethodError

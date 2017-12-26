@@ -1,5 +1,9 @@
 # Zero::ParamsProcessor
 
+[![Build Status](https://travis-ci.org/zhandao/zero-params_processor.svg?branch=test)](https://travis-ci.org/zhandao/zero-params_processor)
+[![Maintainability](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/maintainability)](https://codeclimate.com/github/zhandao/zero-params_processor/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/test_coverage)](https://codeclimate.com/github/zhandao/zero-params_processor/test_coverage)
+
 Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/zero/params_processor`. To experiment with that code, run `bin/console` for an interactive prompt.
 
 TODO: Delete this and the text above, and describe your gem
