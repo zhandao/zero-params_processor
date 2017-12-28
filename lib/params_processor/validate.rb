@@ -24,13 +24,13 @@ module ParamsProcessor
           check if_is_present
           break if @input.nil?# || (@doc.blankable != false && @input.blank? && @input != false)
           check type
-          check_each_element if @doc.type == 'array'
-          check_each_pair    if @doc.type == 'object'
           check size                   if @doc.size
           check if_is_entity           if @doc.is
           check if_in_allowable_values if @doc.enum
           check if_match_pattern       if @doc.pattern
           check if_is_in_range         if @doc.range
+          check_each_element           if @doc.type == 'array'
+          check_each_pair              if @doc.type == 'object'
         end)
       end
 
