@@ -37,12 +37,14 @@ module ParamsProcessor
             form = action_doc[:requestBody]&.[](:content)&.[]('multipart/form-data')
             if form.present?
               required = form[:schema][:required] || [ ]
+              permit = form[:schema][:permit] ? true : false
               form[:schema][:properties].each do |name, prop_schema|
                 (action_doc[:parameters] ||= [ ]) << {
                     'name' => name,
                     'in' => 'form',
                     'required' => required.include?(name),
-                    'schema' => prop_schema
+                    'schema' => prop_schema,
+                    'permit' => permit
                 }
               end
             end

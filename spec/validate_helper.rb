@@ -1,7 +1,3 @@
-RSpec::Expectations.configuration.on_potential_false_positives = :nothing
-
-ParamsProcessor::Config.test = true
-
 module Temp; cattr_accessor :msg end
 
 def _check

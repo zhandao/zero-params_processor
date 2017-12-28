@@ -22,21 +22,23 @@ module ParamsProcessor
     end
 
     { # INTERFACE_MAPPING
-      name:      %i[ name              ],
-      required:  %i[ required          ],
-      in:        %i[ in                ],
-      schema:    %i[ schema            ],
-      enum:      %i[ schema enum       ],
-      pattern:   %i[ schema pattern    ],
-      regexp:    %i[ schema pattern    ],
-      type:      %i[ schema type       ],
-      format:    %i[ schema format     ],
-      is:        %i[ schema is         ],
-      dft:       %i[ schema default    ],
-      as:        %i[ schema as         ],
-      items:     %i[ schema items      ],
-      props:     %i[ schema properties ],
-      blankable: %i[ schema blankable  ],
+      name:        %i[ name              ],
+      required:    %i[ required          ],
+      in:          %i[ in                ],
+      schema:      %i[ schema            ],
+      enum:        %i[ schema enum       ],
+      pattern:     %i[ schema pattern    ],
+      regexp:      %i[ schema pattern    ],
+      type:        %i[ schema type       ],
+      format:      %i[ schema format     ],
+      is:          %i[ schema is         ],
+      dft:         %i[ schema default    ],
+      as:          %i[ schema as         ],
+      items:       %i[ schema items      ],
+      props:       %i[ schema properties ],
+      blankable:   %i[ schema blankable  ],
+      # permit?:     %i[ schema permit     ],
+      # not_permit?: %i[ schema not_permit ],
     }.each do |method, path|
       define_method method do path.reduce(self, &:[]) end # Get value from hash by key path
     end

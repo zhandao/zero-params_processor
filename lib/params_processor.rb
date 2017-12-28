@@ -19,8 +19,8 @@ module ParamsProcessor
     validate_params! convert = true
   end
 
-  def convert_param_types
-    params_doc&.each { |doc| _convert_param_type(doc) }
+  def convert_param_types # TODO: rename
+    params_doc&.each { |doc| _convert_param_type(ParamDocObj.new(doc)) }
   end
 
   def _convert_param_type(doc)
@@ -33,6 +33,7 @@ module ParamsProcessor
     params[doc.as] = params.delete(name) if doc.as.present?
   end
 
+  # TODO?: to validate_and_convert_params!
   def set_permitted
     return if params_doc.nil?
     doced_keys = params_doc.map { |p| p[:schema][:as] || p[:name] }
@@ -44,10 +45,9 @@ module ParamsProcessor
       exist_not_permit = true if npmt
       p[:schema][:as] || p[:name]
     end.compact
-    permitted_keys = doced_keys - keys if exist_not_permit
-    permitted_keys = doced_keys if keys.blank? # TODO: MOVE
 
-    @permitted = params.permit *(permitted_keys || [ ])
+    keys = exist_not_permit ? doced_keys - keys : keys
+    @permitted = params.permit(*keys)
   end
 
   def permitted; @permitted end
@@ -81,7 +81,7 @@ module ParamsProcessor
     path_doc = DocConverter.docs[current_api][:paths][@route_path]
     # 考虑没有 doc 时的 before action
     doc = path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
-    doc.map { |p| p.try(:deep_symbolize_keys) }
+    doc.map { |p| p.try(:deep_symbolize_keys) || p }
   end
 
 

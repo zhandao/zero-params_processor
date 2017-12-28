@@ -1,5 +1,5 @@
 
-lib = File.expand_path("../lib", __FILE__)
+lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'params_processor/version'
 
@@ -9,12 +9,11 @@ Gem::Specification.new do |spec|
   spec.authors       = ['zhandao']
   spec.email         = ['x@skippingcat.com']
 
-  spec.summary       = 'Process parameters base on Zero-Rails_OpenApi for Rails, such as: ' \
+  spec.summary       = 'Process parameters base on OpenApi3 JSON documentation'
+  spec.description   = 'Process parameters base on OpenApi3 JSON documentation, such as: ' \
                        'validation and type conversion'
-  spec.description   = 'Process parameters base on Zero-Rails_OpenApi for Rails, such as: ' \
-                       'validation and type conversion'
-  spec.homepage      = "https://github.com/zhandao/zero-params_processor"
-  spec.license       = "MIT"
+  spec.homepage      = 'https://github.com/zhandao/zero-params_processor'
+  spec.license       = 'MIT'
 
   spec.files         = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})

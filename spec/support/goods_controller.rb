@@ -6,10 +6,18 @@ class GoodsController
   attr_accessor :params
 
   def initialize(params = { id: 1, info: 'info' })
-    self.params = ActionController::Parameters.new(params)
+    self.params = ActionController::Parameters.new(params || { id: 1, info: 'info' })
   end
 
   def self.controller_path
+    'goods'
+  end
+
+  def self.error_cls
+    Patches
+  end
+
+  def controller_name
     'goods'
   end
 
@@ -22,8 +30,14 @@ class GoodsController
   end
 
   module Patches
-    def self.method
+    extend self
+
+    def method
       'POST'
+    end
+
+    def not_found!
+      #
     end
   end
 end

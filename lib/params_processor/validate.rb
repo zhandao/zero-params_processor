@@ -109,7 +109,7 @@ module ParamsProcessor
 
       def if_is_in_range
         rg = @doc.range
-        fmt = fmt.tr('-', '_').camelize.constantize if (fmt = @doc.format)&.match?('date')
+        fmt = @doc.format.tr('-', '_').camelize.constantize if @doc.format&.match?('date')
         min = fmt ? parse_time!(fmt, rg[:min] || '1-1-1') : rg[:min]
         max = fmt ? parse_time!(fmt, rg[:max] || '9999-12-31') : rg[:max]
         @input = fmt ? parse_time!(fmt, @input) : @input.to_f

@@ -163,7 +163,7 @@ RSpec.describe ParamsProcessor::Validate do
 
     context 'when type is not time' do
       context 'when [a, b]' do
-        set_info type: 'float', minimum: 2.5, maximum: 4
+        set_info type: 'number', format: 'float', minimum: 2.5, maximum: 4
         info [ 2.5, 3, 4.0 ], all_pass
         info [ -1, 0, 5, 2.4 ], all_fail!
       end
@@ -175,7 +175,7 @@ RSpec.describe ParamsProcessor::Validate do
       end
 
       context 'when [a, b)' do
-        set_info type: 'float', minimum: 1, maximum: 5, exclusiveMaximum: true
+        set_info type: 'number', format: 'float', minimum: 1, maximum: 5, exclusiveMaximum: true
         info [ 1, 4, 4.999 ], all_pass
         info [ 0, 5, 5.0 ], all_fail!
       end

@@ -20,8 +20,12 @@ RSpec.configure do |config|
   end
 end
 
+RSpec::Expectations.configuration.on_potential_false_positives = :nothing
+
+ParamsProcessor::Config.test = true
+
 def set_info schema
   _schema = OpenApi.info_schema.clone
-  before { OpenApi.info_schema = _schema.merge(schema) }
+  before { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema.merge(schema) }
   after { OpenApi.info_schema = _schema}
 end
