@@ -21,6 +21,16 @@ RSpec.describe ParamsProcessor do
 
   desc :convert_param_types do
     called by: { id: '1', info: 1 }, converted: { id: 1, info: '1' }
+
+    context 'when param has default value' do
+      set_info default: 'default'
+      called by: { id: 1 }, converted: { id: 1, info: 'default' }
+    end
+
+    context 'when param has a alias' do
+      set_info as: :name, default: 'name'
+      called by: { id: 1 }, converted: { id: 1, name: 'name' }
+    end
   end
 
 
@@ -42,6 +52,12 @@ RSpec.describe ParamsProcessor do
     context 'when info is set not_pmt' do
       set_info not_permit: true
       called by: { id: 1, info: 'info' }, pmtted: [:id]
+    end
+
+    context 'when route_path match /{param_name}/' do
+      set_path :'goods/{id}/action'
+      called by: { id: 1 }, found: true
+      called by: { id: 0 }, found: false
     end
   end
 end

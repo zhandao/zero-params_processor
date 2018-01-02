@@ -27,5 +27,11 @@ ParamsProcessor::Config.test = true
 def set_info schema
   _schema = OpenApi.info_schema.clone
   before { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema.merge(schema) }
-  after { OpenApi.info_schema = _schema}
+  after { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema}
+end
+
+def set_info! schema
+  _schema = OpenApi.info_schema.clone
+  before { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = schema }
+  after { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema}
 end

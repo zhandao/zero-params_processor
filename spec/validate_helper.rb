@@ -8,7 +8,7 @@ def _check
     doc = OpenApi.send(param)
     OpenApi.send("#{param}_schema=" , schema)
     expect { ParamsProcessor::Validate.(input, based_on: ParamsProcessor::ParamDocObj.new(doc)) }
-        .send(whether, raise_error(ParamsProcessor::ValidationFailed, ParamsProcessor::Config.send(with)))
+        .send(whether, raise_error(ParamsProcessor::ValidationFailed, (ParamsProcessor::Config.send(with) rescue with)))
   end
 end
 
@@ -30,7 +30,7 @@ alias check_id check
   define_method p do |input, description = nil, if: nil, expect: nil, all: nil, with: nil, without: nil|
     p = :id if p == :uuid
     expect ||= all
-    with = with || without || Temp.msg.to_s
+    with = with || without || Temp.msg
     with_msg = " #{expect['pass'] ? 'without' : 'with'} " << with.to_s if with
     _if = binding.local_variable_get(:if)
     description ||= "when #{_if.inspect}" if _if

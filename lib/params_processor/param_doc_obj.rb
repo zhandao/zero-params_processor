@@ -1,5 +1,7 @@
+require 'active_support/hash_with_indifferent_access'
+
 module ParamsProcessor
-  class ParamDocObj < ::ActiveSupport::HashWithIndifferentAccess
+  class ParamDocObj < HashWithIndifferentAccess
     # Interfaces for directly taking the processed info what we focus on.
     def range
       return if (schema.keys & %w[ minimum maximum ]).blank?
@@ -13,13 +15,21 @@ module ParamsProcessor
 
     def size
       return if (schema.keys & %w[ minItems maxItems minLength maxLength ]).blank?
-      size = if type.eql? 'array'
+      size = if type.in? %w[ array object ]
                [schema[:minItems], schema[:maxItems]]
              else
                [schema[:minLength], schema[:maxLength]]
              end
       size.tap { |it| it[0] ||= 0; it[1] ||= Float::INFINITY }
     end
+
+    def combined
+      { all_of: all_of, one_of: one_of, any_of: any_of, not: not_be }.keep_if { |_k, v| !v.nil? }
+    end
+
+    def combined?; combined.present? end
+
+    def combined_modes; combined.keys end
 
     { # INTERFACE_MAPPING
       name:        %i[ name              ],
@@ -31,6 +41,10 @@ module ParamsProcessor
       regexp:      %i[ schema pattern    ],
       type:        %i[ schema type       ],
       format:      %i[ schema format     ],
+      all_of:      %i[ schema allOf      ],
+      one_of:      %i[ schema oneOf      ],
+      any_of:      %i[ schema anyOf      ],
+      not_be:      %i[ schema not        ],
       is:          %i[ schema is         ],
       dft:         %i[ schema default    ],
       as:          %i[ schema as         ],

@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'simplecov'
 
-  spec.add_runtime_dependency 'zero-rails_openapi', '>= 1.5.1'
+  spec.add_runtime_dependency 'zero-rails_openapi', '>= 1.5.2'
   spec.add_runtime_dependency 'rails', '>= 3'
   spec.add_runtime_dependency 'activesupport', '>= 3'
   spec.add_runtime_dependency 'multi_json'

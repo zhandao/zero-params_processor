@@ -37,7 +37,7 @@ class GoodsController
     end
 
     def not_found!
-      #
+      raise ::ParamsProcessor::ValidationFailed
     end
   end
 end

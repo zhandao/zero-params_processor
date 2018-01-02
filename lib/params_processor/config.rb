@@ -2,6 +2,10 @@ require 'active_support/all'
 
 module ParamsProcessor
   module Config
+    cattr_accessor :strict_check do
+      false
+    end
+
     cattr_accessor :prefix do
       'parameter'
     end
@@ -40,6 +44,10 @@ module ParamsProcessor
 
     cattr_accessor :out_of_range do
       'is out of range'
+    end
+
+    cattr_accessor :wrong_combined_type do
+      'must be'
     end
 
     cattr_accessor :test do

@@ -15,7 +15,7 @@ end
   end
 end
 
-def called by: params = nil, get: result = nil, raise: msg = nil, converted: nil, pmtted: nil
+def called by: params = nil, get: result = nil, raise: msg = nil, converted: nil, pmtted: nil, found: nil
   it_blk = -> { expect(send(action, by)).to eq get } if get
 
   it_blk = -> {
@@ -29,18 +29,31 @@ def called by: params = nil, get: result = nil, raise: msg = nil, converted: nil
 
   it_blk = -> do
     send(action, by)
-    expect(Temp.g.send(:permitted)).to eq ActionController::Parameters.new(by).permit(*pmtted)
+    expect(permitted = Temp.g.send(:permitted)).to eq ActionController::Parameters.new(by).permit(*pmtted)
+    permitted.each { |k, v| expect(Temp.g.instance_variable_get("@#{k}")).to eq v }
   end if pmtted
+
+  it_blk = -> do
+    expect { send(action, by) }.send(found ? :not_to : :to, raise_error)
+    expect(Temp.g.instance_variable_get('@good')).to eq Good.find_by(id: by[:id])
+  end unless found.nil?
 
   msg = "to get #{get}" if get
   msg = "parameters to be #{converted.inspect}" if converted
-  msg = "to get permitted #{pmtted.join(', ')}" if pmtted
+  msg = "to get permitted #{pmtted.join(', ')}, and instance vars @#{by.keys.join(', @')} is set." if pmtted
+  msg = "#{found ? 'not to' : 'to'} raise :not_found#{', and instance var @good is set' if found}" unless found.nil?
   msg ||= "#{'not ' unless raise}to raise ValidationFailed#{' with ' << raise.to_s if raise.is_a?(Symbol)}"
-  it "after calling it, expect #{msg}" do
-    Temp.msg = raise.is_a?(Symbol) ? ParamsProcessor::Config.send(raise) :  nil
+  it "after calling it by #{by.inspect}, expect #{msg}" do
+    Temp.msg = raise.is_a?(Symbol) ? ParamsProcessor::Config.send(raise) : nil
     instance_exec(&it_blk)
   end
 end
 
 def pass; { raise: false } end
 def fail!; { raise: true } end
+
+def set_path path
+  p = OpenApi.path.clone
+  before { ParamsProcessor::DocConverter.docs = nil; OpenApi.path = path }
+  after { ParamsProcessor::DocConverter.docs = nil; OpenApi.path = p }
+end

@@ -4,7 +4,7 @@ module ParamsProcessor
   class DocConverter < HashWithIndifferentAccess
     cattr_accessor :docs
 
-    def initialize(inhert_hash)
+    def initialize(inhert_hash = { })
       super(inhert_hash)
       convert
       # puts self

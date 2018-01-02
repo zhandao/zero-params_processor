@@ -4,10 +4,6 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/maintainability)](https://codeclimate.com/github/zhandao/zero-params_processor/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/test_coverage)](https://codeclimate.com/github/zhandao/zero-params_processor/test_coverage)
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/zero/params_processor`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
-
 ## ONLY FOR [Zero-Rails](https://github.com/zhandao/zero-rails)
 
 ## Installation
@@ -15,20 +11,19 @@ TODO: Delete this and the text above, and describe your gem
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'zero-params_processor'
+gem 'zero-params_processor', github: 'zhandao/zero-params_processor'
 ```
 
 And then execute:
 
     $ bundle
 
-Or install it yourself as:
-
-    $ gem install zero-params_processor
-
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+before_action :validate_and_convert_params!
+before_action :set_permitted
+```
 
 ## Development
 

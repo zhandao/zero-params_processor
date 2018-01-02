@@ -76,7 +76,7 @@ module ParamsProcessor
 
   def params_doc
     DocConverter.docs ||= DocConverter.new OpenApi.docs
-    current_api = OpenApi.paths_index[self.class.controller_path]
+    current_api = OpenApi.routes_index[self.class.controller_path]
     @route_path = OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
     path_doc = DocConverter.docs[current_api][:paths][@route_path]
     # 考虑没有 doc 时的 before action

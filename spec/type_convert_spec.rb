@@ -65,4 +65,6 @@ RSpec.describe ParamsProcessor::TypeConvert do
   type :other do
     given 'a', 'returns itself', expect: 'a'
   end
+
+  # TODO: combined
 end

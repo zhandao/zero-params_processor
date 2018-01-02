@@ -55,7 +55,7 @@ RSpec.describe ParamsProcessor::Validate do
     end
 
     context 'when expecting for string' do
-      info 123, pass
+      info [ 123, {}, [] ], all_pass
 
       context 'date' do
         set_info type: 'string', format: 'date'
@@ -89,21 +89,66 @@ RSpec.describe ParamsProcessor::Validate do
   end
 
 
+  desc :check_combined_type do
+    context 'all_of' do
+      set_info! allOf: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
+      info [ 'aa', 'ab', 'abc' ], all_pass
+      info [ 11, '12', 'abccc' ], all: :fail, with: ' `info` must be all_of the specified schemas.'
+    end
+
+    context 'not' do
+      set_info! not: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
+      info [ 1, { }, 1234 ], all_pass
+      info [ 'abc', 11, 'dd' ], all: :fail, with: ' `info` must be not the specified schemas.'
+    end
+
+    context 'one_of' do
+      set_info! oneOf: [ { type: 'string' }, { type: 'integer' }, { type: 'boolean' } ]
+      info [ 'a', 123, true ], all_pass
+      # validates the value against [exactly] one of the subschemas
+      info [ '1', 'true' ], all: :fail, with: ' `info` must be one_of the specified schemas.'
+      # strict check when checking combined schema
+      info [ { }, ['a'] ], all: :fail, with: ' `info` must be one_of the specified schemas.'
+    end
+
+    context 'any_of' do
+      set_info! anyOf: [ { type: 'string' }, { type: 'integer' }, { type: 'boolean' } ]
+      info [ 'a', 123, true ], all_pass
+      # validates the value against any (one or more) of the subschemas
+      info [ '1', 'true' ], all_pass
+      # strict check when checking combined schema
+      info [ { }, ['a'] ], all: :fail, with: ' `info` must be any_of the specified schemas.'
+    end
+
+    context 'mixed' do
+      set_info! allOf: [ { type: 'string' }, { pattern: 'a|b|c' } ], not: [ { minLength: 2, maxLength: 3 }, { pattern: 'd' } ]
+      info [ 'a', 'abca' ], all_pass
+      info [ 'aaad', 'abcd' ], all_fail!
+    end
+  end
+
+
   desc :size, fail_with: :wrong_size do
     info nil, pass
     uuid '', 'when allowing blank', pass
     info '1234567890', 'when size does not specify', pass
 
-    context 'when not passing array' do
+    context 'when not passing a set' do
       set_info minLength: 2, maxLength: 3
-      info [ 12, 123, 'aa', nil, { } ], all_pass
+      info [ 12, 123, 'aa', nil ], all_pass
       info [ 1, 1234, '1234', true ], all_fail!
     end
 
     context 'when passing array' do
       set_info type: 'array', minItems: 2, maxItems: 3
-      info [ 1, 2 ], pass
+      info [1, 2], pass
       info [ [1], [1, 2, 3, 4] ], all_fail!
+    end
+
+    context 'when passing object' do
+      set_info type: 'object', minItems: 2, maxItems: 3
+      info ({ a: 1, b: 2, c: 3 }), pass
+      info [ { }, { a: 1 } ], all_fail!
     end
   end
 

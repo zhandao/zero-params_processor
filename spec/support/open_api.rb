@@ -1,20 +1,20 @@
 module OpenApi
-  cattr_accessor :paths_index do
+  cattr_accessor :routes_index do
     { 'goods' => :zro }
   end
 
   module Generator
     def self.find_path_httpverb_by(ctrl_path, action)
-      ['goods/action', 'post']
+      [OpenApi.path, 'post']
     end
   end
 
   module Temp
-    cattr_accessor :id_schema, :info_schema, :id, :info
+    cattr_accessor :id_schema, :info_schema, :id, :info, :path
   end
 
   class << self
-    delegate :id_schema=, :info_schema=, :id=, :info=, to: Temp
+    delegate :id_schema=, :info_schema=, :id=, :info=, :path=, to: Temp
 
     def info_schema
       Temp.info_schema || { type: 'string' }
@@ -42,12 +42,16 @@ module OpenApi
       }
     end
 
+    def path
+      Temp.path || :'goods/action'
+    end
+
     def json
       {
           openapi: '3.0.0',
           tags: [{ name: :Good }],
           paths: {
-              'goods/action': {
+              path => {
                   post: {
                       operationId: :action,
                       tags: [:Good],

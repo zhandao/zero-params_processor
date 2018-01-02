@@ -23,7 +23,8 @@ module ParamsProcessor
         check (if_is_passed do
           check if_is_present
           break if @input.nil?# || (@doc.blankable != false && @input.blank? && @input != false)
-          check type
+          check_combined_types         if @doc.combined?
+          check type                   if @doc.type
           check size                   if @doc.size
           check if_is_entity           if @doc.is
           check if_in_allowable_values if @doc.enum
@@ -52,7 +53,7 @@ module ParamsProcessor
         when 'object'  then @input.is_a?(ActionController::Parameters) || @input.is_a?(Hash)
         when 'number'  then _number_type
         when 'string'  then _string_type
-        else true
+        else true # TODO
         end or [:wrong_type, @doc.format.to_s]
       end
 
@@ -60,7 +61,7 @@ module ParamsProcessor
         case @doc.format
         when 'float'  then @str_input.match?(/^[-+]?\d*\.?\d+$/)
         when 'double' then @str_input.match?(/^[-+]?\d*\.?\d+$/)
-        else true
+        else true # TODO
         end or [:wrong_type, @doc.format.to_s]
       end
 
@@ -71,7 +72,7 @@ module ParamsProcessor
         when 'date-time' then parse_time!(DateTime)
         when 'base64'    then Base64.strict_decode64(@input)
         when 'json'      then MultiJson.load(@input)
-        else true
+        else Config.strict_check ? @input.is_a?(String) : true
         end
       rescue ArgumentError, MultiJson::ParseError
         false
@@ -79,7 +80,7 @@ module ParamsProcessor
 
       def size
         # FIXME: 应该检查 doc 中的，而不是输入的
-        if @input.is_a? Array
+        if @input.class.in? [ Array, Hash, ActionController::Parameters ]
           @input.size >= @doc.size[0] && @input.size <= @doc.size[1]
         else
           @str_input.length >= @doc.size[0] && @str_input.length <= @doc.size[1]
@@ -87,10 +88,9 @@ module ParamsProcessor
       end
 
       def if_is_entity
-        # TODO
         case @doc.is
         when 'email'; @str_input.match?(/\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]{2,}\z/i)
-        else true
+        else true # TODO
         end or [:is_not_entity, @doc.is.to_s]
       end
 
@@ -121,18 +121,51 @@ module ParamsProcessor
         [:out_of_range, "#{min} #{left_op} x #{right_op} #{max}"] unless is_in_range
       end
 
+      def check_combined_types
+        @doc.combined.each do |mode, schemas|
+          results = check_each_schema(schemas)
+
+          case mode
+          when :all_of then results.all?(&:present?)
+          when :one_of then results.count(true) == 1
+          when :any_of then results.include?(true)
+          when :not    then results.all?(&:blank?)
+          end or raise ValidationFailed, " `#{@doc.name.to_sym}` #{Config.wrong_combined_type} #{mode} the specified schemas."
+        end
+      end
+
+      def check_each_schema(schemas)
+        results = [ ]
+        strict_check = Config.strict_check.clone
+        _doc, Config.strict_check = @doc, true
+        schemas.each do |schema|
+          doc = ParamDocObj.new name: @doc.name, schema: schema
+          begin
+            Validate.(@input, based_on: doc, raise: @error_class)
+            results << true
+          rescue ValidationFailed
+            results << false
+          end
+        end
+        @doc, Config.strict_check = _doc, strict_check
+        results
+      end
+
       def check_each_element
         return if @doc.items.blank?
 
+        _doc, _input = @doc, @input
         items_doc = ParamDocObj.new name: @doc.name, schema: @doc.items
         @input.each do |input|
           Validate.(input, based_on: items_doc, raise: @error_class)
         end
+        @doc, @input = _doc, _input
       end
 
       def check_each_pair
         return if @doc.props.blank?
 
+        _doc = @doc
         required = (@doc[:schema][:required] || [ ]).map(&:to_s)
         @doc.props.each do |name, schema|
           prop_doc = ParamDocObj.new name: name, required: required.include?(name), schema: schema
@@ -140,6 +173,7 @@ module ParamsProcessor
           Validate.(@input[name] || @input[name.to_sym], based_on: prop_doc, raise: @error_class)
           @input = _input
         end
+        @doc = _doc
       end
 
       def check msg

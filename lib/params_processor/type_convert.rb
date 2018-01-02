@@ -9,7 +9,7 @@ module ParamsProcessor
 
       # TODO: 循环和递归转换
       def convert
-        send(@doc.type)
+        send(@doc.type || @doc.combined_modes.first) # TODO
       rescue NoMethodError
         @input
       end
@@ -43,6 +43,27 @@ module ParamsProcessor
       end
 
       def object
+        @input
+      end
+
+      # combined TODO
+
+      def all_of
+        doc = ParamDocObj.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
+        TypeConvert.(@input, based_on: doc)
+      end
+
+      def one_of
+        doc = ParamDocObj.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
+        TypeConvert.(@input, based_on: doc)
+      end
+
+      def any_of
+        doc = ParamDocObj.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
+        TypeConvert.(@input, based_on: doc)
+      end
+
+      def not
         @input
       end
 
