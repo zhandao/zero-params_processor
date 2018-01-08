@@ -1,8 +1,7 @@
 require 'multi_json'
 require 'params_processor/config'
 require 'params_processor/doc_converter'
-require 'params_processor/param_doc_obj'
-require 'params_processor/type_convert'
+require 'params_processor/param_doc'
 
 module ParamsProcessor
   class Validate
@@ -79,12 +78,11 @@ module ParamsProcessor
       end
 
       def size
-        # FIXME: 应该检查 doc 中的，而不是输入的
-        if @input.class.in? [ Array, Hash, ActionController::Parameters ]
-          @input.size >= @doc.size[0] && @input.size <= @doc.size[1]
+        if @doc.type.in? %w[ array object ]
+          @input.size >= @doc.size[:min] && @input.size <= @doc.size[:max]
         else
-          @str_input.length >= @doc.size[0] && @str_input.length <= @doc.size[1]
-        end or [:wrong_size, @doc.size.join('..')]
+          @str_input.length >= @doc.size[:min] && @str_input.length <= @doc.size[:max]
+        end or [:wrong_size, @doc.size.values.join('..')]
       end
 
       def if_is_entity
@@ -139,7 +137,7 @@ module ParamsProcessor
         strict_check = Config.strict_check.clone
         _doc, Config.strict_check = @doc, true
         schemas.each do |schema|
-          doc = ParamDocObj.new name: @doc.name, schema: schema
+          doc = ParamDoc.new name: @doc.name, schema: schema
           begin
             Validate.(@input, based_on: doc, raise: @error_class)
             results << true
@@ -155,7 +153,7 @@ module ParamsProcessor
         return if @doc.items.blank?
 
         _doc, _input = @doc, @input
-        items_doc = ParamDocObj.new name: @doc.name, schema: @doc.items
+        items_doc = ParamDoc.new name: @doc.name, schema: @doc.items
         @input.each do |input|
           Validate.(input, based_on: items_doc, raise: @error_class)
         end
@@ -168,7 +166,7 @@ module ParamsProcessor
         _doc = @doc
         required = (@doc[:schema][:required] || [ ]).map(&:to_s)
         @doc.props.each do |name, schema|
-          prop_doc = ParamDocObj.new name: name, required: required.include?(name), schema: schema
+          prop_doc = ParamDoc.new name: name, required: required.include?(name), schema: schema
           _input = @input
           Validate.(@input[name] || @input[name.to_sym], based_on: prop_doc, raise: @error_class)
           @input = _input

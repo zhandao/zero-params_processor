@@ -21,8 +21,8 @@ And then execute:
 ## Usage
 
 ```ruby
-before_action :validate_and_convert_params!
-before_action :set_permitted
+before_action { process_params_by :validate!, :convert }
+before_action :process_params!
 ```
 
 ## Development

@@ -54,7 +54,7 @@ RSpec.describe ParamsProcessor::Validate do
       end
     end
 
-    context 'when expecting for string' do
+    context 'when expecting for string' do # TODO strict_check
       info [ 123, {}, [] ], all_pass
 
       context 'date' do
@@ -98,7 +98,7 @@ RSpec.describe ParamsProcessor::Validate do
 
     context 'not' do
       set_info! not: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
-      info [ 1, { }, 1234 ], all_pass
+      info [ 1, { x: 1 }, 1234 ], all_pass
       info [ 'abc', 11, 'dd' ], all: :fail, with: ' `info` must be not the specified schemas.'
     end
 
@@ -135,7 +135,8 @@ RSpec.describe ParamsProcessor::Validate do
 
     context 'when not passing a set' do
       set_info minLength: 2, maxLength: 3
-      info [ 12, 123, 'aa', nil ], all_pass
+      # type expect string but pass a Hash will be to_s before size checking
+      info [ 12, 123, 'aa', nil, { } ], all_pass
       info [ 1, 1234, '1234', true ], all_fail!
     end
 

@@ -9,13 +9,25 @@ def desc action, &block
   end
 end
 
-%i[ validate_params! convert_param_types validate_and_convert_params! set_permitted params_doc ].each do |action|
+%i[ process_params! _validate_param! _convert_param _set_instance_var _set_permitted params_doc ].each do |action|
+  args = {
+      process_params!: %i[ validate! convert set_instance_var set_permitted ],
+      _validate_param!: [:validate!],
+      _convert_param: [:convert],
+      _set_instance_var: [:set_instance_var],
+      _set_permitted: [:set_permitted]
+  }
   define_method action do |params = nil|
-    (Temp.g = GoodsController.new(params)).send(action)
+    Temp.g = GoodsController.new(params)
+    if action.in?(args.keys)
+      Temp.g.send(:process_params_by, *args[action])
+    else
+      Temp.g.send(action)
+    end
   end
 end
 
-def called by: params = nil, get: result = nil, raise: msg = nil, converted: nil, pmtted: nil, found: nil
+def called before: nil,by: params = nil, get: result = nil, raise: msg = nil, converted: nil, pmtted: nil, found: nil
   it_blk = -> { expect(send(action, by)).to eq get } if get
 
   it_blk = -> {
@@ -30,7 +42,6 @@ def called by: params = nil, get: result = nil, raise: msg = nil, converted: nil
   it_blk = -> do
     send(action, by)
     expect(permitted = Temp.g.send(:permitted)).to eq ActionController::Parameters.new(by).permit(*pmtted)
-    permitted.each { |k, v| expect(Temp.g.instance_variable_get("@#{k}")).to eq v }
   end if pmtted
 
   it_blk = -> do
@@ -40,10 +51,11 @@ def called by: params = nil, get: result = nil, raise: msg = nil, converted: nil
 
   msg = "to get #{get}" if get
   msg = "parameters to be #{converted.inspect}" if converted
-  msg = "to get permitted #{pmtted.join(', ')}, and instance vars @#{by.keys.join(', @')} is set." if pmtted
+  msg = "to get permitted #{pmtted.join(', ')}" if pmtted
   msg = "#{found ? 'not to' : 'to'} raise :not_found#{', and instance var @good is set' if found}" unless found.nil?
   msg ||= "#{'not ' unless raise}to raise ValidationFailed#{' with ' << raise.to_s if raise.is_a?(Symbol)}"
   it "after calling it by #{by.inspect}, expect #{msg}" do
+    instance_exec(&before) if before
     Temp.msg = raise.is_a?(Symbol) ? ParamsProcessor::Config.send(raise) : nil
     instance_exec(&it_blk)
   end
@@ -53,7 +65,6 @@ def pass; { raise: false } end
 def fail!; { raise: true } end
 
 def set_path path
-  p = OpenApi.path.clone
-  before { ParamsProcessor::DocConverter.docs = nil; OpenApi.path = path }
-  after { ParamsProcessor::DocConverter.docs = nil; OpenApi.path = p }
+  before { DocConverter.docs = nil; allow(OpenApi).to receive(:path).and_return(path) }
+  after { DocConverter.docs = nil }
 end

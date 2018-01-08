@@ -43,8 +43,7 @@ module ParamsProcessor
                     'name' => name,
                     'in' => 'form',
                     'required' => required.include?(name),
-                    'schema' => prop_schema,
-                    'permit' => permit
+                    'schema' => prop_schema.merge!(permit: permit),
                 }
               end
             end

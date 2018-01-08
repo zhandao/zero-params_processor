@@ -1,7 +1,7 @@
 require 'active_support/hash_with_indifferent_access'
 
 module ParamsProcessor
-  class ParamDocObj < HashWithIndifferentAccess
+  class ParamDoc < HashWithIndifferentAccess
     # Interfaces for directly taking the processed info what we focus on.
     def range
       return if (schema.keys & %w[ minimum maximum ]).blank?
@@ -20,7 +20,7 @@ module ParamsProcessor
              else
                [schema[:minLength], schema[:maxLength]]
              end
-      size.tap { |it| it[0] ||= 0; it[1] ||= Float::INFINITY }
+      { min: size[0] || 0, max: size[1] || Float::INFINITY }
     end
 
     def combined
@@ -30,6 +30,10 @@ module ParamsProcessor
     def combined?; combined.present? end
 
     def combined_modes; combined.keys end
+
+    def real_name; as || name end
+
+    def doced_permit?; permit? || not_permit? end
 
     { # INTERFACE_MAPPING
       name:        %i[ name              ],
@@ -51,10 +55,10 @@ module ParamsProcessor
       items:       %i[ schema items      ],
       props:       %i[ schema properties ],
       blankable:   %i[ schema blankable  ],
-      # permit?:     %i[ schema permit     ],
-      # not_permit?: %i[ schema not_permit ],
+      permit?:     %i[ schema permit     ],
+      not_permit?: %i[ schema not_permit ],
     }.each do |method, path|
-      define_method method do path.reduce(self, &:[]) end # Get value from hash by key path
+      define_method method do path.reduce(self, &:[]) end # Get value from hash by key path TODO dig
     end
     alias required? required
   end

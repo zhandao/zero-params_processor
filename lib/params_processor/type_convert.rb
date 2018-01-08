@@ -49,17 +49,17 @@ module ParamsProcessor
       # combined TODO
 
       def all_of
-        doc = ParamDocObj.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
+        doc = ParamDoc.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
         TypeConvert.(@input, based_on: doc)
       end
 
       def one_of
-        doc = ParamDocObj.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
+        doc = ParamDoc.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
         TypeConvert.(@input, based_on: doc)
       end
 
       def any_of
-        doc = ParamDocObj.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
+        doc = ParamDoc.new name: @doc.name, schema: @doc.all_of.reduce({}, :merge)
         TypeConvert.(@input, based_on: doc)
       end
 

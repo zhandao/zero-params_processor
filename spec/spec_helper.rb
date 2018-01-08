@@ -24,14 +24,17 @@ RSpec::Expectations.configuration.on_potential_false_positives = :nothing
 
 ParamsProcessor::Config.test = true
 
+DocConverter = ParamsProcessor::DocConverter
+
 def set_info schema
   _schema = OpenApi.info_schema.clone
-  before { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema.merge(schema) }
-  after { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema}
+  before { DocConverter.docs = nil; OpenApi.info_schema = _schema.merge(schema) }
+  after { DocConverter.docs = nil; OpenApi.info_schema = _schema}
+  # before { DocConverter.docs = nil; allow(OpenApi).to receive(:info_schema).and_return(OpenApi.info_schema.merge(schema)) }
+  # after { DocConverter.docs = nil }
 end
 
 def set_info! schema
-  _schema = OpenApi.info_schema.clone
-  before { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = schema }
-  after { ParamsProcessor::DocConverter.docs = nil; OpenApi.info_schema = _schema}
+  before { DocConverter.docs = nil; allow(OpenApi).to receive(:info_schema).and_return(schema) }
+  after { DocConverter.docs = nil }
 end

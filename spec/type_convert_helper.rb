@@ -23,6 +23,6 @@ def given input, desc = nil,if: nil, expect:
     OpenApi.info_schema.merge!(_if)
     doc = OpenApi.info
     OpenApi.info_schema = schema
-    expect(ParamsProcessor::TypeConvert.(input, based_on: ParamsProcessor::ParamDocObj.new(doc))).to eq expect
+    expect(ParamsProcessor::TypeConvert.(input, based_on: ParamsProcessor::ParamDoc.new(doc))).to eq expect
   end
 end
