@@ -2,6 +2,10 @@ require 'active_support/all'
 
 module ParamsProcessor
   module Config
+    cattr_accessor :actions do
+      nil
+    end
+
     cattr_accessor :strict_check do
       false
     end

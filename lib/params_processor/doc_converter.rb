@@ -7,7 +7,6 @@ module ParamsProcessor
     def initialize(inhert_hash = { })
       super(inhert_hash)
       convert
-      # puts self
     end
 
     def fill_with_ref(who, ref_to)
@@ -16,6 +15,7 @@ module ParamsProcessor
       who.merge! @api_components.fetch(ref_to).fetch(ref_name)
     end
 
+    # TODO: refactor
     def convert
       return if blank?
       self.each do |_api, api_doc|
@@ -38,12 +38,12 @@ module ParamsProcessor
             if form.present?
               required = form[:schema][:required] || [ ]
               permit = form[:schema][:permit] ? true : false
-              form[:schema][:properties].each do |name, prop_schema|
+              form[:schema][:properties]&.each do |name, prop_schema|
                 (action_doc[:parameters] ||= [ ]) << {
                     'name' => name,
                     'in' => 'form',
                     'required' => required.include?(name),
-                    'schema' => prop_schema.merge!(permit: permit),
+                    'schema' => prop_schema.reverse_merge!(permit: permit),
                 }
               end
             end

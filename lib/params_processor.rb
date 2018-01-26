@@ -18,7 +18,8 @@ module ParamsProcessor
   end
 
   def process_params!
-    process_params_by *%i[ validate! convert set_instance_var set_permitted ]
+    actions = Config.actions || %i[ validate! convert set_instance_var set_permitted ]
+    process_params_by *actions
   end
 
   def _validate_param!(param_doc)
@@ -65,6 +66,7 @@ module ParamsProcessor
     keys = params_docs.map { |p| p.doced_permit? ? p.real_name : nil }.compact
     keys = exist_not_permit ? params_docs.map(&:real_name) - keys : keys
     @permitted = params.permit(*keys)
+    # @permitted = params.slice(*keys).to_unsafe_h
   end
 
   def permitted; @permitted end

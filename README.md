@@ -4,7 +4,7 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/maintainability)](https://codeclimate.com/github/zhandao/zero-params_processor/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/test_coverage)](https://codeclimate.com/github/zhandao/zero-params_processor/test_coverage)
 
-## ONLY FOR [Zero-Rails](https://github.com/zhandao/zero-rails)
+## ONLY FOR the RAILS app that using Zero-Rails_OpenApi, like [Zero-Rails](https://github.com/zhandao/zero-rails)
 
 ## Installation
 
@@ -22,8 +22,64 @@ And then execute:
 
 ```ruby
 before_action { process_params_by :validate!, :convert }
-before_action :process_params!
+before_action :process_params! # all actions will be called
 ```
+Action options: %i[ validate! convert set_instance_var set_permitted ]
+
+### validate!
+
+Check each input parameter based on `OpenApi.docs` (Zero-Rails_OpenApi's cattr), it will
+raise `ParamsProcessor::ValidationFailed < StandardError` if check failed.
+
+Note: If it did not find the corresponding open-api information in `OpenApi.docs`,
+the check will be skipped.
+
+### convert
+
+Convert each input parameter to the specified type base on `OpenApi.docs`. For example:
+
+We declare the parameter like this:
+```ruby
+query :price, Integer
+query :like,  Boolean
+query :time,  Date
+```
+In case params[:price] == `'1'`, the Converter will make it to be `1` (a Integer).  
+In case params[:like] == `0`, the Converter will make it to be `false`.  
+In case params[:time] == `'2018/1/1'`, the Converter will make it to be `Date.new(2018, 1, 1)`.  
+
+### set_instance_var
+
+Let (converted) input parameters to be instance variables of the current controller.
+
+After that, you can access the params value like: `@price`, `@like`, `@time`.
+
+### set_permitted
+
+Permit the parameters that having `permit: true` attribute in `OpenApi.docs`. Like this:
+
+```ruby
+query :price, Integer, pmt: true
+```
+
+Then, the :price parameter will be permitted.
+
+After this action, you can access all the permitted input via method `permitted`. Like:
+
+```ruby
+Book.create(permitted)
+```
+
+Note: `not_permit: true` attribute will lead to a slightly different behavior: All the
+parameter that are not having `not_permit: true` will be permitted. For example:
+
+```ruby
+query :price, Integer
+query :like, Boolean, npmt: true
+query :time, Date
+```
+
+Then, the :price and :time will be permitted.
 
 ## Development
 
