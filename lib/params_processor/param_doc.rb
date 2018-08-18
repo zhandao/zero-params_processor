@@ -58,7 +58,7 @@ module ParamsProcessor
       permit?:     %i[ schema permit     ],
       not_permit?: %i[ schema not_permit ],
     }.each do |method, path|
-      define_method method do path.reduce(self, &:[]) end # Get value from hash by key path TODO dig
+      define_method method do self.dig(*path) end
     end
     alias required? required
   end

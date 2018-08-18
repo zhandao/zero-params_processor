@@ -23,7 +23,7 @@ module ParamsProcessor
   end
 
   def _validate_param!(param_doc)
-    input = param_doc.name == 'Token' ? token : params[param_doc.name.to_sym] # TODO: move
+    input = param_doc.in == 'header' ? request.headers[param_doc.name.to_s] : params[param_doc.name.to_sym]
     error_class = "#{controller_name.camelize}Error".constantize rescue nil
     Validate.(input, based_on: param_doc, raise: error_class)
   end

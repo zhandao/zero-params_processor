@@ -4,6 +4,26 @@
 [![Maintainability](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/maintainability)](https://codeclimate.com/github/zhandao/zero-params_processor/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/4d2fd3c04abf75a1158b/test_coverage)](https://codeclimate.com/github/zhandao/zero-params_processor/test_coverage)
 
+```ruby
+# declare aop callback which provided by zpp
+before_action :process_params!
+
+# if you defined following spec in your api doc
+# `query!` bang method means it's a required param
+query! :time, Date, gt: '2018/1/1'.to_date, permit: true
+
+# THEN in your controller action, you will get:
+# 1. param validate: require, Date type and range
+# 2. value convert: JSON has not Date type, you must
+#	   do a convert from String, but it can do it for you:
+params[:time] = params[:time].to_date # after some format checkers
+# 3. set instance variable: allows you get the param by `@time`
+#      instead of `params[:time]`
+# 4. permitted: if you defined a lot of params with `permit: true`,
+#      you will be allowed to get them by calling `permitted`, like:
+Book.create(permitted)
+```
+
 ## ONLY FOR the RAILS app that using Zero-Rails_OpenApi, like [Zero-Rails](https://github.com/zhandao/zero-rails)
 
 ## Installation
@@ -11,7 +31,7 @@
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'zero-params_processor', github: 'zhandao/zero-params_processor'
+gem 'zero-params_processor'#, github: 'zhandao/zero-params_processor'
 ```
 
 And then execute:
