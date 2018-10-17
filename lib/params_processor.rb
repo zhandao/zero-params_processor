@@ -3,6 +3,8 @@ require 'params_processor/validate'
 require 'params_processor/type_convert'
 
 module ParamsProcessor
+  cattr_accessor :docs
+
   private
 
   def process_params_by(*actions)
@@ -57,7 +59,7 @@ module ParamsProcessor
   def _auto_find_by_id(key, value)
     whos_id = (key.to_sym == :id ? controller_name : key.to_s.sub('_id', '')).singularize
     model = whos_id.camelize.constantize rescue return
-    model_instance = model.find_by(id: value) || self.class.error_cls.not_found! # TODO HACK
+    model_instance = model.find_by(id: value) || Error::Api.not_found! # TODO HACK
     instance_variable_set("@#{whos_id}", model_instance)
   end
 
@@ -76,9 +78,9 @@ module ParamsProcessor
     current_api = OpenApi.routes_index[self.class.controller_path]
     return [ ] unless current_api
 
-    DocConverter.docs ||= DocConverter.new(OpenApi.docs)
+    self.docs ||= DocConverter.new(OpenApi.docs)
     @route_path = OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
-    path_doc = DocConverter.docs[current_api][:paths][@route_path]
+    path_doc = docs[current_api][:paths][@route_path]
     # nil check is for skipping this before_action when the action is not doced.
     path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
   end

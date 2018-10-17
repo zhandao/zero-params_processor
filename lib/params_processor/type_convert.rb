@@ -34,7 +34,7 @@ module ParamsProcessor
         when 'date'      then parse_time(Date)
         when 'date-time' then parse_time(DateTime)
         when 'base64'    then @input # Base64.strict_decode64(@input)
-        else @input.to_s
+        else @input
         end
       end
 
