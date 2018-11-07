@@ -48,12 +48,13 @@ module ParamsProcessor
         case @doc.type
         when 'integer' then @str_input.match?(/^-?\d*$/)
         when 'boolean' then @str_input.in? %w[ true 1 false 0 ]
-        when 'array'   then @input.is_a? Array
-        when 'object'  then @input.is_a?(ActionController::Parameters) || @input.is_a?(Hash)
+        when 'array'   then @input.is_a?(Array) || (@input.is_a?(String) && @input[','])
+        when 'object'  then @input.is_a?(ActionController::Parameters) || @input.is_a?(Hash) ||
+                            (@input.is_a?(String) && @input['{'] && @input['}'])
         when 'number'  then _number_type
         when 'string'  then _string_type
         else true # TODO
-        end or [:wrong_type, @doc.format.to_s]
+        end or [:wrong_type, (@doc.format || @doc.type).to_s]
       end
 
       def _number_type
@@ -154,6 +155,7 @@ module ParamsProcessor
 
         _doc, _input = @doc, @input
         items_doc = ParamDoc.new name: @doc.name, schema: @doc.items
+        @input = MultiJson.load(@input) if @input.is_a?(String)
         @input.each do |input|
           Validate.(input, based_on: items_doc, raise: @error_class)
         end
@@ -164,11 +166,12 @@ module ParamsProcessor
         return if @doc.props.blank?
 
         _doc = @doc
+        hash = @input.is_a?(String) ? MultiJson.load(@input) : @input
         required = (@doc[:schema][:required] || [ ]).map(&:to_s)
         @doc.props.each do |name, schema|
           prop_doc = ParamDoc.new name: name, required: required.include?(name), schema: schema
           _input = @input
-          Validate.(@input[name] || @input[name.to_sym], based_on: prop_doc, raise: @error_class)
+          Validate.(hash[name] || hash[name.to_sym], based_on: prop_doc, raise: @error_class)
           @input = _input
         end
         @doc = _doc

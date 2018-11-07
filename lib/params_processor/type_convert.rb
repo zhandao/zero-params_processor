@@ -39,11 +39,13 @@ module ParamsProcessor
       end
 
       def array
-        @input
+        return unless @input.is_a?(String)
+        @input = MultiJson.load(@input)
       end
 
       def object
-        @input
+        return unless @input.is_a?(String)
+        MultiJson.load(@input, symbolize_keys: true)
       end
 
       # combined TODO
