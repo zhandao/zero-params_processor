@@ -34,18 +34,19 @@ module ParamsProcessor
         when 'date'      then parse_time(Date)
         when 'date-time' then parse_time(DateTime)
         when 'base64'    then @input # Base64.strict_decode64(@input)
-        else @input
+        when 'binary'    then @input
+        else @input.to_s
         end
       end
 
       def array
-        return unless @input.is_a?(String)
+        return @input unless @input.is_a?(String)
         @input = MultiJson.load(@input)
       end
 
       def object
-        return unless @input.is_a?(String)
-        MultiJson.load(@input, symbolize_keys: true)
+        return @input unless @input.is_a?(String)
+        @input = MultiJson.load(@input)
       end
 
       # combined TODO

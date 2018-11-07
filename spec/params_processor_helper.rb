@@ -65,6 +65,6 @@ def pass; { raise: false } end
 def fail!; { raise: true } end
 
 def set_path path
-  before { DocConverter.docs = nil; allow(OpenApi).to receive(:path).and_return(path) }
-  after { DocConverter.docs = nil }
+  before { ParamsProcessor.docs = nil; allow(OpenApi).to receive(:path).and_return(path) }
+  after { ParamsProcessor.docs = nil }
 end

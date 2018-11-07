@@ -21,7 +21,7 @@ module ParamsProcessor
         @doc = param_doc
         check (if_is_passed do
           check if_is_present
-          break if @input.nil?# || (@doc.blankable != false && @input.blank? && @input != false)
+          next if @input.nil?# || (@doc.blankable != false && @input.blank? && @input != false)
           check_combined_types         if @doc.combined?
           check type                   if @doc.type
           check size                   if @doc.size
