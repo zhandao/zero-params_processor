@@ -48,7 +48,7 @@ module ParamsProcessor
         case @doc.type
         when 'integer' then @str_input.match?(/^-?\d*$/)
         when 'boolean' then @str_input.in? %w[ true 1 false 0 ]
-        when 'array'   then @input.is_a?(Array) || (@input.is_a?(String) && @input[','])
+        when 'array'   then @input.is_a?(Array) || (@input.is_a?(String) && @input['['])
         when 'object'  then @input.is_a?(ActionController::Parameters) || @input.is_a?(Hash) ||
                             (@input.is_a?(String) && @input['{'] && @input['}'])
         when 'number'  then _number_type
@@ -179,6 +179,7 @@ module ParamsProcessor
 
       def check msg
         return unless msg.is_a? Array
+        @error_class.params_error! if @error_class.respond_to? :params_error
         @error_class.send("#{@doc.name}_#{msg.first}!") if @error_class.respond_to? "#{@doc.name}_#{msg.first}!"
         @error_class.send("#{msg.first}!") if @error_class.respond_to? msg.first
         raise ValidationFailed, Config.production_msg if Config.production_msg.present?

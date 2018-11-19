@@ -26,7 +26,7 @@ module ParamsProcessor
 
   def _validate_param!(param_doc)
     input = param_doc.in == 'header' ? request.headers[param_doc.name.to_s] : params[param_doc.name.to_sym]
-    error_class = "#{controller_name.camelize}Error".constantize rescue nil
+    error_class = "Error::#{controller_name.camelize}".constantize rescue nil
     Validate.(input, based_on: param_doc, raise: error_class)
   end
 
