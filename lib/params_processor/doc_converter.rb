@@ -32,7 +32,8 @@ module ParamsProcessor
 
             # 将 form-data 提到 parameters，方便统一访问接口
             # 在 param ref 处理之前上提，使后续可以一并将 properties 中的 schma 进行处理
-            form = action_doc[:requestBody]&.[](:content)&.[]('multipart/form-data')
+            form = action_doc[:requestBody]&.[](:content)
+            form = form['multipart/form-data'] || form['application/json'] if form # TODO
             if form.present?
               required = form[:schema][:required] || [ ]
               permit = form[:schema][:permit] ? true : false
