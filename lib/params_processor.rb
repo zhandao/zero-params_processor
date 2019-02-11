@@ -16,6 +16,7 @@ module ParamsProcessor
       _validate_param!(param_doc)  if actions.index(:validate!)
       _convert_param(param_doc)    if actions.index(:convert)
       _set_instance_var(param_doc) if actions.index(:set_instance_var)
+      _group_params(param_doc)     if param_doc.group
       param_doc
     end
     _set_permitted(pdocs) if actions.index(:set_permitted)
@@ -43,12 +44,18 @@ module ParamsProcessor
   end
 
   def _set_instance_var(param_doc)
-    key = param_doc.real_name
-    return if (value = params[key]).nil?
+    return if (value = params[(key = param_doc.real_name)]).nil?
 
     instance_variable_set("@#{key}", value)
     _permit_hash_and_array(value) if param_doc.permit?
     _auto_find_by_id(key, value) if @route_path.match?(/\{#{key}\}/) # e.g. "/examples/{id}"
+  end
+
+  def _group_params(param_doc)
+    return if (value = params[(key = param_doc.real_name.to_sym)]).nil?
+
+    instance_variable_get("@#{param_doc.group}")&.merge!(key => value) ||
+        instance_variable_set("@#{param_doc.group}", key => value )
   end
 
   # If params[:data] == [{..}, {..}], each `{..}` in the array
@@ -77,10 +84,10 @@ module ParamsProcessor
 
   # TODO: performance
   def params_doc
-    return [ ] unless (current_api = OpenApi.routes_index[controller_path])
+    return [ ] unless (current_api = OpenApi.routes_index[self.class.controller_path])
 
     self.docs ||= DocConverter.new(OpenApi.docs)
-    @route_path = OpenApi::Router.find_path_httpverb_by(controller_path, action_name).first
+    @route_path = OpenApi::Router.find_path_httpverb_by(self.class.controller_path, action_name).first
     path_doc = docs[current_api][:paths][@route_path]
     # nil check is for skipping this before_action when the action is not doced.
     path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]

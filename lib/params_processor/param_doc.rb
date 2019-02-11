@@ -57,6 +57,7 @@ module ParamsProcessor
       items:       %i[ schema items      ],
       props:       %i[ schema properties ],
       blankable:   %i[ schema blankable  ],
+      group:       %i[ schema group      ],
       permit?:     %i[ schema permit     ],
       not_permit?: %i[ schema not_permit ],
     }.each do |method, path|

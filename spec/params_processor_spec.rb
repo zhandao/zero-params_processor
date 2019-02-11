@@ -55,6 +55,13 @@ RSpec.describe ParamsProcessor do
   end
 
 
+  desc :_group_params do
+    set_info group: 'data'
+    called by: { info: 'test' }
+    it { expect(Temp.g.instance_variable_get('@data')).to eq(info: 'test') }
+  end
+
+
   # TODO: like request body
   desc :_set_permitted do
     called by: { id: 1 }, pmtted: [ ]

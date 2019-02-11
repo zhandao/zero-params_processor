@@ -9,13 +9,14 @@ def desc action, &block
   end
 end
 
-%i[ process_params! _validate_param! _convert_param _set_instance_var _set_permitted params_doc ].each do |action|
+%i[ process_params! _validate_param! _convert_param _set_instance_var _group_params _set_permitted params_doc ].each do |action|
   args = {
       process_params!: %i[ validate! convert set_instance_var set_permitted ],
       _validate_param!: [:validate!],
       _convert_param: [:convert],
       _set_instance_var: [:set_instance_var],
-      _set_permitted: [:set_permitted]
+      _set_permitted: [:set_permitted],
+      _group_params: [:group_params],
   }
   define_method action do |params = nil|
     Temp.g = GoodsController.new(params)
@@ -27,9 +28,7 @@ end
   end
 end
 
-def called before: nil,by: params = nil, get: result = nil, raise: msg = nil, converted: nil, pmtted: nil, found: nil
-  it_blk = -> { expect(send(action, by)).to eq get } if get
-
+def called before: nil, by: params = nil, get: result = nil, raise: msg = nil, converted: nil, pmtted: nil, found: nil
   it_blk = -> {
     expect{ send(action, by) }.send(raise ? :to : :not_to, raise_error(ParamsProcessor::ValidationFailed, Temp.msg))
   } unless raise.nil?
@@ -48,6 +47,8 @@ def called before: nil,by: params = nil, get: result = nil, raise: msg = nil, co
     expect { send(action, by) }.send(found ? :not_to : :to, raise_error)
     expect(Temp.g.instance_variable_get('@good')).to eq Good.find_by(id: by[:id])
   end unless found.nil?
+
+  it_blk = -> { expect(send(action, by)).to eq get } if get || !it_blk
 
   msg = "to get #{get}" if get
   msg = "parameters to be #{converted.inspect}" if converted
