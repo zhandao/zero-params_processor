@@ -15,7 +15,7 @@ RSpec.describe ParamsProcessor do
     end
 
     context 'when the path is not doced' do
-      called before: -> { expect(OpenApi::Generator).to receive(:find_path_httpverb_by).and_return(['not_doced_path', 'post']) }, get: [ ]
+      called before: -> { expect(OpenApi::Router).to receive(:find_path_httpverb_by).and_return(['not_doced_path', 'post']) }, get: [ ]
     end
 
     context 'when the action is not doced' do

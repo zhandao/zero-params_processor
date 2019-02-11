@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'params_processor/version'
 require 'params_processor/validate'
 require 'params_processor/type_convert'
@@ -79,7 +81,7 @@ module ParamsProcessor
     return [ ] unless current_api
 
     self.docs ||= DocConverter.new(OpenApi.docs)
-    @route_path = OpenApi::Generator.find_path_httpverb_by(self.class.controller_path, action_name).first
+    @route_path = OpenApi::Router.find_path_httpverb_by(self.class.controller_path, action_name).first
     path_doc = docs[current_api][:paths][@route_path]
     # nil check is for skipping this before_action when the action is not doced.
     path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]

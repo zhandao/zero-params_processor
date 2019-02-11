@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'multi_json'
 require 'params_processor/config'
 require 'params_processor/doc_converter'

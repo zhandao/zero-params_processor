@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'active_support/hash_with_indifferent_access'
 
 module ParamsProcessor
@@ -49,7 +51,7 @@ module ParamsProcessor
       one_of:      %i[ schema oneOf      ],
       any_of:      %i[ schema anyOf      ],
       not_be:      %i[ schema not        ],
-      is:          %i[ schema is         ],
+      is:          %i[ schema is_a       ],
       dft:         %i[ schema default    ],
       as:          %i[ schema as         ],
       items:       %i[ schema items      ],
