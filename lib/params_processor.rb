@@ -69,19 +69,18 @@ module ParamsProcessor
     exist_not_permit = params_docs.map(&:not_permit?).any?(&:present?)
     keys = params_docs.map { |p| p.doced_permit? ? p.real_name : nil }.compact
     keys = exist_not_permit ? params_docs.map(&:real_name) - keys : keys
-    @permitted = params.permit(*keys)
-    # @permitted = params.slice(*keys).to_unsafe_h
+    # @permitted = params.permit(*keys) TODO
+    @permitted = params.slice(*keys).to_unsafe_h
   end
 
   def permitted; @permitted end
 
   # TODO: performance
   def params_doc
-    current_api = OpenApi.routes_index[self.class.controller_path]
-    return [ ] unless current_api
+    return [ ] unless (current_api = OpenApi.routes_index[controller_path])
 
     self.docs ||= DocConverter.new(OpenApi.docs)
-    @route_path = OpenApi::Router.find_path_httpverb_by(self.class.controller_path, action_name).first
+    @route_path = OpenApi::Router.find_path_httpverb_by(controller_path, action_name).first
     path_doc = docs[current_api][:paths][@route_path]
     # nil check is for skipping this before_action when the action is not doced.
     path_doc&.[](request.method.downcase)&.[](:parameters) || [ ]
