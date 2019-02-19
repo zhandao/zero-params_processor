@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'open_api/router'
+
 require 'params_processor/version'
 require 'params_processor/validate'
 require 'params_processor/type_convert'
@@ -95,6 +97,6 @@ module ParamsProcessor
 
 
   class ValidationFailed < StandardError
-    def info; { code: 400, msg: "#{Config.prefix}".concat(message), http_status: :bad_request }; end
+    def info; { code: 400, msg: "#{Config.prefix}" + message, http_status: :bad_request }; end
   end
 end

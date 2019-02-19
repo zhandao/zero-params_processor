@@ -188,7 +188,7 @@ module ParamsProcessor
 
         test_msg = Config.send(msg.first) if Config.test
         msg = "#{Config.send(msg.first)}#{' ' + msg.last if msg.last.present?}"
-        msg = " `#{@doc.name.to_sym}` " << msg
+        msg = " `#{@doc.name.to_sym}` " + msg
         raise ValidationFailed, test_msg || msg
       end
 
