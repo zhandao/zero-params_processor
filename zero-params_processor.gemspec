@@ -29,7 +29,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency 'zero-rails_openapi', '>= 1.5.2'
 
-  spec.add_runtime_dependency 'rails', '>= 3'
+  spec.add_runtime_dependency 'rails', '5.0.7.2'
   spec.add_runtime_dependency 'activesupport', '>= 3'
   spec.add_runtime_dependency 'multi_json'
 end
