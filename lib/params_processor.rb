@@ -57,7 +57,7 @@ module ParamsProcessor
     return if (value = params[(key = param_doc.real_name.to_sym)]).nil?
 
     instance_variable_get("@#{param_doc.group}")&.merge!(key => value) ||
-        instance_variable_set("@#{param_doc.group}", key => value )
+        instance_variable_set("@#{param_doc.group}", key => value)
   end
 
   # If params[:data] == [{..}, {..}], each `{..}` in the array
@@ -79,7 +79,7 @@ module ParamsProcessor
     keys = params_docs.map { |p| p.doced_permit? ? p.real_name : nil }.compact
     keys = exist_not_permit ? params_docs.map(&:real_name) - keys : keys
     # @permitted = params.permit(*keys) TODO
-    @permitted = params.slice(*keys).to_unsafe_h
+    @permitted = params.slice(*keys).to_unsafe_h.symbolize_keys
   end
 
   def permitted; @permitted end
