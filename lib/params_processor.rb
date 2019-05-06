@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require 'open_api/config'
 require 'open_api/router'
 
 require 'params_processor/version'
 require 'params_processor/validate'
 require 'params_processor/type_convert'
+require 'params_processor/dry_schema'
 
 module ParamsProcessor
   cattr_accessor :docs

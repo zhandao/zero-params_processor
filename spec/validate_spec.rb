@@ -89,43 +89,43 @@ RSpec.describe ParamsProcessor::Validate do
   end
 
 
-  desc :check_combined_type do
-    context 'all_of' do
-      set_info! allOf: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
-      info [ 'aa', 'ab', 'abc' ], all_pass
-      info [ 11, '12', 'abccc' ], all: :fail, with: ' `info` must be all_of the specified schemas.'
-    end
-
-    context 'not' do
-      set_info! not: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
-      info [ 1, { x: 1 }, 1234 ], all_pass
-      info [ 'abc', 11, 'dd' ], all: :fail, with: ' `info` must be not the specified schemas.'
-    end
-
-    context 'one_of' do
-      set_info! oneOf: [ { type: 'string' }, { type: 'integer' }, { type: 'boolean' } ]
-      info [ 'a', 123, true ], all_pass
-      # validates the value against [exactly] one of the subschemas
-      info [ '1', 'true' ], all: :fail, with: ' `info` must be one_of the specified schemas.'
-      # strict check when checking combined schema
-      info [ { }, ['a'] ], all: :fail, with: ' `info` must be one_of the specified schemas.'
-    end
-
-    context 'any_of' do
-      set_info! anyOf: [ { type: 'string' }, { type: 'integer' }, { type: 'boolean' } ]
-      info [ 'a', 123, true ], all_pass
-      # validates the value against any (one or more) of the subschemas
-      info [ '1', 'true' ], all_pass
-      # strict check when checking combined schema
-      info [ { }, ['a'] ], all: :fail, with: ' `info` must be any_of the specified schemas.'
-    end
-
-    context 'mixed' do
-      set_info! allOf: [ { type: 'string' }, { pattern: 'a|b|c' } ], not: [ { minLength: 2, maxLength: 3 }, { pattern: 'd' } ]
-      info [ 'a', 'abca' ], all_pass
-      info [ 'aaad', 'abcd' ], all_fail!
-    end
-  end
+  # desc :check_combined_type do
+  #   context 'all_of' do
+  #     set_info! allOf: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
+  #     info [ 'aa', 'ab', 'abc' ], all_pass
+  #     info [ 11, '12', 'abccc' ], all: :fail, with: ' `info` must be all_of the specified schemas.'
+  #   end
+  #
+  #   context 'not' do
+  #     set_info! not: [ { type: 'string' }, { pattern: 'a|b|c' }, { minLength: 2, maxLength: 3 } ]
+  #     info [ 1, { x: 1 }, 1234 ], all_pass
+  #     info [ 'abc', 11, 'dd' ], all: :fail, with: ' `info` must be not the specified schemas.'
+  #   end
+  #
+  #   context 'one_of' do
+  #     set_info! oneOf: [ { type: 'string' }, { type: 'integer' }, { type: 'boolean' } ]
+  #     info [ 'a', 123, true ], all_pass
+  #     # validates the value against [exactly] one of the subschemas
+  #     info [ '1', 'true' ], all: :fail, with: ' `info` must be one_of the specified schemas.'
+  #     # strict check when checking combined schema
+  #     info [ { }, ['a'] ], all: :fail, with: ' `info` must be one_of the specified schemas.'
+  #   end
+  #
+  #   context 'any_of' do
+  #     set_info! anyOf: [ { type: 'string' }, { type: 'integer' }, { type: 'boolean' } ]
+  #     info [ 'a', 123, true ], all_pass
+  #     # validates the value against any (one or more) of the subschemas
+  #     info [ '1', 'true' ], all_pass
+  #     # strict check when checking combined schema
+  #     info [ { }, ['a'] ], all: :fail, with: ' `info` must be any_of the specified schemas.'
+  #   end
+  #
+  #   context 'mixed' do
+  #     set_info! allOf: [ { type: 'string' }, { pattern: 'a|b|c' } ], not: [ { minLength: 2, maxLength: 3 }, { pattern: 'd' } ]
+  #     info [ 'a', 'abca' ], all_pass
+  #     info [ 'aaad', 'abcd' ], all_fail!
+  #   end
+  # end
 
 
   desc :size, fail_with: :wrong_size do

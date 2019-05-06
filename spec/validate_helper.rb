@@ -7,8 +7,9 @@ def _check
     OpenApi.send("#{param}_schema").merge!(_if || { })
     doc = OpenApi.send(param)
     OpenApi.send("#{param}_schema=" , schema)
-    expect { ParamsProcessor::Validate.(input, based_on: ParamsProcessor::ParamDoc.new(doc)) }
-        .send(whether, raise_error(ParamsProcessor::ValidationFailed, (ParamsProcessor::Config.send(with) rescue with)))
+    # expect { ParamsProcessor::Validate.(input, based_on: ParamsProcessor::ParamDoc.new(doc)) }
+    #     .send(whether, raise_error(ParamsProcessor::ValidationFailed, (ParamsProcessor::Config.send(with) rescue with)))
+    expect { ParamsProcessor::DrySchema.new([doc]).validate(input) }.send(whether, raise_error)
   end
 end
 
